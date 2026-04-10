@@ -28,6 +28,14 @@
         background-color: #e8edf3;
     }
 
+    .app-shell .tabs.tabs-admin {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .app-shell .tabs.tabs-encargado {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
     .app-shell .tab-link {
         text-decoration: none;
         color: #202734;
@@ -51,7 +59,9 @@
     }
 
     @media (max-width: 768px) {
-        .app-shell .tabs {
+        .app-shell .tabs,
+        .app-shell .tabs.tabs-admin,
+        .app-shell .tabs.tabs-encargado {
             grid-template-columns: repeat(2, 1fr);
         }
     }
@@ -63,8 +73,10 @@
         <p class="mb-0">Navega entre módulos sin volver atrás manualmente.</p>
     </header>
 
-    <nav class="tabs">
-        <a class="tab-link {% if active == 'inicio' %}active{% endif %}" href="/">🏠 Inicio</a>
+    <nav class="tabs {% if request.user.is_superuser %}tabs-admin{% else %}tabs-encargado{% endif %}">
+            {% if request.user.is_superuser %}
+            <a class="tab-link {% if active == 'encargados' %}active{% endif %}" href="/encargados-ui/">🧑‍💼 Encargados</a>
+        {% endif %}
         <a class="tab-link {% if active == 'libros' %}active{% endif %}" href="/libros-ui/">📖 Libros</a>
         <a class="tab-link {% if active == 'prestamos' %}active{% endif %}" href="/">📋 Préstamos</a>
         <a class="tab-link {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/">👥 Usuarios</a>
