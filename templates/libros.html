@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Libros - Biblioteca</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+.table {
+    border-collapse: collapse !important;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    background-color: #212529; /* mismo que table-dark */
+    z-index: 2;
+}
+
+/* evita líneas blancas entre header y filas */
+thead, tbody, tr, td, th {
+    border-color: #dee2e6 !important;
+}
+</style>
+<body style="background-color: #f1f3f5;">
+
+<div class="d-flex justify-content-center align-items-center min-vh-100">
+
+    <div class="bg-white p-4 rounded shadow-lg" style="width: 100%; max-width: 1100px;">
+
+        <h2 class="mb-4">📚 Gestión de Libros</h2>
+        <input type="text"
+       id="buscadorLibros"
+       class="form-control mb-3"
+       placeholder="🔍 Buscar por título, autor, editorial o ISBN..."
+       onkeyup="filtrarLibros()">
+        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalCrear">
+            ➕ Agregar Libro
+        </button>
+        <div style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-striped">
+            <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Editorial</th>
+                    <th>Fecha registro</th>
+                    <th>ISBN</th>
+                    <th>Ejemplares</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaLibros"></tbody>
+        </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL CREAR -->
+<div class="modal fade" id="modalCrear">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Crear Libro</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input id="crear_titulo" class="form-control mb-2" placeholder="Título">
+        <input id="crear_autor" class="form-control mb-2" placeholder="Autor">
+        <input id="crear_editorial" class="form-control mb-2" placeholder="Editorial">
+        <input id="crear_fecha" type="date" class="form-control mb-2">
+        <input id="crear_isbn" class="form-control mb-2" placeholder="ISBN">
+        <input id="crear_cantidad" type="number" class="form-control mb-2" placeholder="Cantidad de ejemplares">
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" onclick="crearLibro()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal fade" id="modalEditar">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Editar Libro</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit_id">
+        <input id="edit_titulo" class="form-control mb-2">
+        <input id="edit_autor" class="form-control mb-2">
+        <input id="edit_editorial" class="form-control mb-2">
+        <input id="edit_fecha" type="date" class="form-control mb-2">
+        <input id="edit_isbn" class="form-control mb-2">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-warning" onclick="guardarEdicion()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL EJEMPLARES -->
+<div class="modal fade" id="modalEjemplares">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 id="tituloEjemplares">Ejemplares</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+        <div class="modal-body p-0">
+            <div style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-bordered mb-0">
+            <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+                <tr>
+                    <th>Código</th>
+                    <th>Fecha registro</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaEjemplares"></tbody>
+        </table>
+        </div>
+      </div>
+
+    <div class="modal-footer">
+    <button class="btn btn-secondary" data-bs-dismiss="modal">
+        Cerrar
+    </button>
+    <button class="btn btn-primary" onclick="abrirAgregarEjemplar()">
+        ➕ Agregar
+    </button>
+    </div>
+
+    </div>
+  </div>
+</div>
+<!-- MODAL CANTIDAD EJEMPLARES -->
+<div class="modal fade" id="modalCantidad">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5>Agregar Ejemplares</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <label>Cantidad de ejemplares</label>
+        <input type="number" id="cantidadEjemplares"
+               class="form-control"
+               min="1"
+               placeholder="Ej: 5">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" onclick="confirmarAgregarEjemplares()">
+          Agregar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const API = "http://127.0.0.1:8000";
+
+let libroActual = null;
+let tituloActual = "";
+
+// ================= CARGAR =================
+async function cargarLibros() {
+    const res = await fetch(`${API}/libros/`);
+    const data = await res.json();
+
+    const tabla = document.getElementById("tablaLibros");
+    tabla.innerHTML = "";
+
+    data.forEach(l => {
+        tabla.innerHTML += `
+            <tr>
+                <td>${l.titulo}</td>
+                <td>${l.autor}</td>
+                <td>${l.editorial}</td>
+                <td>${l.fecha_publicacion}</td>
+                <td>${l.isbn}</td>
+                <td>
+                    <button class="btn btn-outline-primary btn-sm"
+                        onclick="verEjemplares(${l.id}, '${l.titulo}', '${l.isbn}')">
+                        Ver (${l.cantidad_ejemplares})
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(l)})'>
+                        Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarLibro(${l.id})">
+                        Eliminar
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+async function cargarEjemplares(libro_id) {
+
+    const res = await fetch(`${API}/libros/${libro_id}/ejemplares_json/`);
+    const data = await res.json();
+
+    const tabla = document.getElementById("tablaEjemplares");
+    tabla.innerHTML = "";
+
+    data.forEach(e => {
+        tabla.innerHTML += `
+            <tr>
+                <td>${e.codigo}</td>
+                <td>${e.fecha_llegada || '-'}</td>
+                <td>
+                    ${e.estado === 'disponible'
+                        ? '<span class="badge bg-success">Disponible</span>'
+                        : '<span class="badge bg-danger">' + e.estado + '</span>'
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm"
+                        onclick="eliminarEjemplar(${e.id})">
+                        🗑
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+//Filtrar libros
+function filtrarLibros() {
+    const filtro = document.getElementById("buscadorLibros").value.toLowerCase();
+    const filas = document.querySelectorAll("#tablaLibros tr");
+
+    filas.forEach(fila => {
+        const texto = fila.innerText.toLowerCase();
+
+        if (texto.includes(filtro)) {
+            fila.style.display = "";
+        } else {
+            fila.style.display = "none";
+        }
+    });
+}
+// ================= CREAR =================
+async function crearLibro() {
+    const titulo = document.getElementById("crear_titulo").value;
+    const autor = document.getElementById("crear_autor").value;
+    const editorial = document.getElementById("crear_editorial").value;
+    const fecha_publicacion = document.getElementById("crear_fecha").value;
+    const isbn = document.getElementById("crear_isbn").value;
+    const cantidad = document.getElementById("crear_cantidad").value;
+
+    await fetch(`${API}/libros/`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ titulo, autor, editorial, fecha_publicacion, isbn, cantidad })
+    });
+
+    cargarLibros();
+    bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
+}
+
+// ================= ELIMINAR =================
+async function eliminarLibro(id) {
+    if (!confirm("¿Eliminar libro?")) return;
+
+    await fetch(`${API}/libros/${id}/`, {
+        method: "DELETE"
+    });
+
+    cargarLibros();
+}
+// Eliminar ejemplar
+async function eliminarEjemplar(id) {
+    if (!confirm("¿Eliminar ejemplar?")) return;
+
+    await fetch(`${API}/ejemplares/${id}/`, {
+        method: "DELETE"
+    });
+
+    // recargar lista
+    cargarEjemplares(libroActual); 
+    cargarLibros();
+}
+
+// ================= EDITAR =================
+function abrirEditar(l) {
+    document.getElementById("edit_id").value = l.id;
+    document.getElementById("edit_titulo").value = l.titulo;
+    document.getElementById("edit_autor").value = l.autor;
+    document.getElementById("edit_editorial").value = l.editorial;
+    document.getElementById("edit_fecha").value = l.fecha_publicacion;
+    document.getElementById("edit_isbn").value = l.isbn;
+
+    const modal = new bootstrap.Modal(document.getElementById("modalEditar"));
+    modal.show();
+}
+
+async function guardarEdicion() {
+    const id = document.getElementById("edit_id").value;
+
+    const titulo = document.getElementById("edit_titulo").value;
+    const autor = document.getElementById("edit_autor").value;
+    const editorial = document.getElementById("edit_editorial").value;
+    const fecha_publicacion = document.getElementById("edit_fecha").value;
+    const isbn = document.getElementById("edit_isbn").value;
+
+    await fetch(`${API}/libros/${id}/`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ titulo, autor, editorial, fecha_publicacion, isbn })
+    });
+
+    cargarLibros();
+    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+}
+// ================= VER EJEMPLARES =================
+async function verEjemplares(libro_id, titulo, isbn) {
+
+    libroActual = libro_id; // ← guardar ID
+    tituloActual = titulo;
+
+    document.getElementById("tituloEjemplares").innerText =
+        "Ejemplares de: " + titulo + " (ISBN: " + isbn + ")";
+
+    await cargarEjemplares(libro_id);
+
+    const modal = new bootstrap.Modal(document.getElementById("modalEjemplares"));
+    modal.show();
+}
+function abrirAgregarEjemplar() {
+    if (!libroActual) return;
+
+    document.getElementById("cantidadEjemplares").value = "";
+
+    const modal = new bootstrap.Modal(document.getElementById("modalCantidad"));
+    modal.show();
+}
+async function confirmarAgregarEjemplares() {
+
+    const input = document.getElementById("cantidadEjemplares");
+    let cantidad = input.value;
+
+    if (!cantidad || cantidad <= 0) {
+        alert("Ingresa una cantidad válida");
+        return;
+    }
+
+    cantidad = parseInt(cantidad);
+
+    await fetch(`${API}/libros/${libroActual}/agregar_ejemplar/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ cantidad })
+    });
+
+    // cerrar modal correctamente
+    const modal = bootstrap.Modal.getInstance(document.getElementById("modalCantidad"));
+    modal.hide();
+
+    // recargar tabla
+    cargarEjemplares(libroActual);
+    cargarLibros();
+}
+// ================= FECHA AUTOMÁTICA =================
+function ponerFechaHoy() {
+    const hoy = new Date();
+    const formato = hoy.toISOString().split('T')[0]; // yyyy-mm-dd
+    document.getElementById("crear_fecha").value = formato;
+}
+
+
+// ================= INIT =================
+ponerFechaHoy();
+cargarLibros();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html> 
