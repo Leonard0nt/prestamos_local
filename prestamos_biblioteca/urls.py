@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import TemplateView
 
 from rest_framework.routers import DefaultRouter
 from usuarioApp.views import UsuarioViewSet
@@ -14,6 +15,7 @@ router.register(r'prestamos', PrestamoViewSet)
 router.register(r'ejemplares', EjemplarViewSet)
 
 urlpatterns = [
+    path('', TemplateView.as_view(template_name='main.html'), name='main_ui'),
     path('admin/', admin.site.urls),
     path('dashboard/', PrestamoViewSet.dashboard),
 
