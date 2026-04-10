@@ -15,9 +15,8 @@ router.register(r'prestamos', PrestamoViewSet)
 router.register(r'ejemplares', EjemplarViewSet)
 
 urlpatterns = [
-    path('', TemplateView.as_view(template_name='main.html'), name='main_ui'),
     path('admin/', admin.site.urls),
-    path('dashboard/', PrestamoViewSet.dashboard),
+    path('', PrestamoViewSet.dashboard),
 
     # UI
     path('usuarios-ui/', UsuarioViewSet.usuarios_view, name='usuarios_ui'),

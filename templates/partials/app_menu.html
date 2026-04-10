@@ -1,0 +1,72 @@
+<style>
+    .app-shell {
+        width: min(1100px, 100%);
+        margin: 24px auto 0;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 15px 45px rgba(15, 18, 61, 0.18);
+        background: #f4f7fb;
+    }
+
+    .app-shell .hero {
+        padding: 26px 24px 20px;
+        text-align: center;
+        color: white;
+        background: linear-gradient(90deg, #3795e2 0%, #19d1d5 100%);
+    }
+
+    .app-shell .hero h1 {
+        margin-bottom: 6px;
+        font-size: clamp(1.5rem, 3vw, 2.2rem);
+        font-weight: 700;
+    }
+
+    .app-shell .tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 1px solid #d4dbe6;
+        background-color: #e8edf3;
+    }
+
+    .app-shell .tab-link {
+        text-decoration: none;
+        color: #202734;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 14px 10px;
+        text-align: center;
+        border-bottom: 4px solid transparent;
+        transition: all .2s ease;
+    }
+
+    .app-shell .tab-link:hover {
+        background-color: #dde5ef;
+        color: #0a63d8;
+    }
+
+    .app-shell .tab-link.active {
+        border-bottom-color: #4f9cf5;
+        color: #2f8cff;
+        background-color: #eef3f9;
+    }
+
+    @media (max-width: 768px) {
+        .app-shell .tabs {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="app-shell">
+    <header class="hero">
+        <h1>📚 Sistema de Biblioteca</h1>
+        <p class="mb-0">Navega entre módulos sin volver atrás manualmente.</p>
+    </header>
+
+    <nav class="tabs">
+        <a class="tab-link {% if active == 'inicio' %}active{% endif %}" href="/">🏠 Inicio</a>
+        <a class="tab-link {% if active == 'libros' %}active{% endif %}" href="/libros-ui/">📖 Libros</a>
+        <a class="tab-link {% if active == 'prestamos' %}active{% endif %}" href="/">📋 Préstamos</a>
+        <a class="tab-link {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/">👥 Usuarios</a>
+    </nav>
+</div>
