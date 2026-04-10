@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import prestamo
-from datetime import date
+
 
 class PrestamoSerializer(serializers.ModelSerializer):
     libro_detalle = serializers.CharField(source='ejemplar.libro.titulo', read_only=True)
@@ -14,15 +14,25 @@ class PrestamoSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Validar que el libro no esté prestado
-        libro = data['libro']
-        ejemplar = data['ejemplar']
+        ejemplar = data.get('ejemplar', getattr(self.instance, 'ejemplar', None))
 
-        if prestamo.objects.filter(ejemplar=ejemplar, estado__in=['P','A']).exists():
-            raise serializers.ValidationError("Este ejemplar no se puede prestar porque ya está prestado o atrasado")
+        if ejemplar:
+            prestamos_activos = prestamo.objects.filter(ejemplar=ejemplar, estado__in=['P', 'A'])
+            if self.instance:
+                prestamos_activos = prestamos_activos.exclude(pk=self.instance.pk)
 
-        # Validar que la fecha de devolución sea mayor
-        if data['fecha_devolucion'] < data['fecha_prestamo']:
-            raise serializers.ValidationError("La fecha de devolución no puede ser menor a la de préstamo")
+            if prestamos_activos.exists():
+                raise serializers.ValidationError(
+                    "Este ejemplar no se puede prestar porque ya está prestado o atrasado"
+                )
+
+        fecha_prestamo = data.get('fecha_prestamo', getattr(self.instance, 'fecha_prestamo', None))
+        fecha_devolucion = data.get('fecha_devolucion', getattr(self.instance, 'fecha_devolucion', None))
+
+        if fecha_prestamo and fecha_devolucion and fecha_devolucion < fecha_prestamo:
+            raise serializers.ValidationError(
+                "La fecha de devolución no puede ser menor a la de préstamo"
+            )
         return data
     
     def create(self, validated_data):

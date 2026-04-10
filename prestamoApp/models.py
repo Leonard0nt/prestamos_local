@@ -15,7 +15,7 @@ class prestamo(models.Model):
         ('P', 'Prestado'),
         ('D', 'Disponible'),
         ('A', 'Atrasado')
-    ],    default='P')
+    ],    default='D')
     activo = models.BooleanField(default=True) 
 
 def __str__(self):
