@@ -9,10 +9,28 @@
     }
 
     .app-shell .hero {
+        position: relative;
         padding: 26px 24px 20px;
         text-align: center;
         color: white;
         background: linear-gradient(90deg, #3795e2 0%, #19d1d5 100%);
+    }
+
+    .app-shell .settings-btn {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        border: none;
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+    }
+
+    .app-shell .settings-btn:hover {
+        background: rgba(255, 255, 255, 0.32);
     }
 
     .app-shell .hero h1 {
@@ -69,6 +87,9 @@
 
 <div class="app-shell">
     <header class="hero">
+        <button class="settings-btn" type="button" data-bs-toggle="modal" data-bs-target="#modalConfiguracionCuenta" title="Configurar cuenta">
+            ⚙️
+        </button>
         <h1>📚 Sistema de Biblioteca</h1>
         <p class="mb-0">Navega entre módulos sin volver atrás manualmente.</p>
         <small class="d-block mt-2">Rol: {% if request.user.is_superuser %}Administrador{% else %}Encargado{% endif %}</small>
@@ -84,3 +105,77 @@
         <a class="tab-link {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/">👥 Usuarios</a>
     </nav>
 </div>
+
+<div class="modal fade" id="modalConfiguracionCuenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formConfiguracionCuenta">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configurar cuenta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="config_username">Nombre de usuario</label>
+                        <input class="form-control" id="config_username" name="username" type="text" required value="{{ request.user.username }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="config_email">Correo</label>
+                        <input class="form-control" id="config_email" name="email" type="email" value="{{ request.user.email }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="config_password">Contraseña nueva</label>
+                        <input class="form-control" id="config_password" name="password" type="password" placeholder="Dejar en blanco para mantener actual">
+                    </div>
+                    <small class="text-secondary">Si cambias la contraseña, se actualizará tu sesión automáticamente.</small>
+                    <div id="configFeedback" class="small mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+
+    const formConfiguracionCuenta = document.getElementById('formConfiguracionCuenta');
+    const configFeedback = document.getElementById('configFeedback');
+
+    formConfiguracionCuenta.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        configFeedback.className = 'small mt-2 text-secondary';
+        configFeedback.innerText = 'Guardando...';
+
+        const formData = new FormData(formConfiguracionCuenta);
+
+        const response = await fetch('/mi-cuenta/actualizar/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: formData
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            configFeedback.className = 'small mt-2 text-danger';
+            configFeedback.innerText = data.detail || 'No se pudo actualizar la configuración.';
+            return;
+        }
+
+        configFeedback.className = 'small mt-2 text-success';
+        configFeedback.innerText = data.detail || 'Configuración actualizada.';
+        document.getElementById('config_password').value = '';
+        setTimeout(() => window.location.reload(), 500);
+    });
+</script>

@@ -1,6 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from rest_framework import permissions, viewsets
 
@@ -42,6 +45,40 @@ def logout_view(request):
     logout(request)
     messages.info(request, 'Sesión cerrada correctamente.')
     return redirect('login')
+
+
+@login_required(login_url='login')
+def actualizar_credenciales_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Método no permitido.'}, status=405)
+
+    user = request.user
+    username = request.POST.get('username', '').strip()
+    email = request.POST.get('email', '').strip()
+    password = request.POST.get('password', '')
+
+    if not username:
+        return JsonResponse({'detail': 'El nombre de usuario es obligatorio.'}, status=400)
+
+    username_existente = user.__class__.objects.filter(username=username).exclude(pk=user.pk).exists()
+    if username_existente:
+        return JsonResponse({'detail': 'El nombre de usuario ya está en uso.'}, status=400)
+
+    if password:
+        try:
+            validate_password(password, user=user)
+        except ValidationError as error:
+            return JsonResponse({'detail': error.messages[0]}, status=400)
+        user.set_password(password)
+
+    user.username = username
+    user.email = email
+    user.save()
+
+    if password:
+        login(request, user)
+
+    return JsonResponse({'detail': 'Configuración actualizada correctamente.'})
 
 
 def _landing_url(user):

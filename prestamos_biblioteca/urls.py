@@ -4,7 +4,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from librosApp.views import EjemplarViewSet, LibroViewSet
 from prestamoApp.views import PrestamoViewSet
-from usuarioApp.views import EncargadoBibliotecaViewSet, UsuarioViewSet, login_view, logout_view
+from usuarioApp.views import EncargadoBibliotecaViewSet, UsuarioViewSet, actualizar_credenciales_view, login_view, logout_view
 
 router = DefaultRouter()
 
@@ -25,6 +25,7 @@ urlpatterns = [
     path('encargados-ui/', EncargadoBibliotecaViewSet.encargados_view, name='encargados_ui'),
     path('libros-ui/', LibroViewSet.libros_view, name='libros_ui'),
     path('libros/<int:libro_id>/ejemplares/', LibroViewSet.ejemplares_view, name='libro_ejemplares'),
+    path('mi-cuenta/actualizar/', actualizar_credenciales_view, name='actualizar_credenciales'),
 ]
 
 urlpatterns += router.urls

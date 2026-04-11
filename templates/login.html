@@ -23,13 +23,27 @@
                     </div>
                     <div class="mb-4">
                         <label class="form-label" for="id_password">Contraseña</label>
-                        <input class="form-control" id="id_password" type="password" name="password" required>
+                        <div class="input-group">
+                            <input class="form-control" id="id_password" type="password" name="password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">Mostrar</button>
+                        </div>
                     </div>
                     <button class="btn btn-primary w-100" type="submit">Ingresar</button>
                 </form>
             </div>
         </div>
     </main>
+
+    <script>
+        const passwordInput = document.getElementById('id_password');
+        const togglePasswordBtn = document.getElementById('togglePassword');
+
+        togglePasswordBtn.addEventListener('click', () => {
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            togglePasswordBtn.innerText = isHidden ? 'Ocultar' : 'Mostrar';
+        });
+    </script>
 </body>
 
 </html>
