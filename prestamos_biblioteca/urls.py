@@ -2,9 +2,9 @@ from django.contrib import admin
 from django.urls import path
 
 from rest_framework.routers import DefaultRouter
-from usuarioApp.views import UsuarioViewSet
-from usuarioApp.views import EncargadoBibliotecaViewSet, UsuarioViewSet
+from librosApp.views import EjemplarViewSet, LibroViewSet
 from prestamoApp.views import PrestamoViewSet
+from usuarioApp.views import EncargadoBibliotecaViewSet, UsuarioViewSet
 
 router = DefaultRouter()
 

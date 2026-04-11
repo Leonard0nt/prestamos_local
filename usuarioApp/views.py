@@ -5,7 +5,7 @@ from rest_framework import permissions, viewsets
 from .models import EncargadoBiblioteca, usuario
 from .serializers import EncargadoBibliotecaSerializer, UsuarioSerializer
 
-@staticmethod
+
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = usuario.objects.all()
     serializer_class = UsuarioSerializer
