@@ -21,6 +21,8 @@ thead th {
 
     {% include 'partials/app_menu.html' with active='encargados' %}
 
+    <form style="display:none;">{% csrf_token %}</form>
+
     <div class="d-flex justify-content-center py-4">
         <div class="bg-white p-4 rounded shadow-lg" style="width: 100%; max-width: 1100px;">
             <h2 class="mb-4">🧑‍💼 Gestión de Encargados de Biblioteca</h2>
@@ -58,7 +60,12 @@ thead th {
                 </div>
                 <div class="modal-body">
                     <input id="crear_nombre" class="form-control mb-2" placeholder="Nombre">
-                    <input id="crear_rut" class="form-control mb-2" placeholder="RUT">
+                    <input id="crear_rut"
+                           class="form-control mb-2"
+                           placeholder="12.345.678-5"
+                           oninput="formatearRUT(this)"
+                           onblur="validarRUT(this)">
+                    <div id="error_rut_crear" class="text-danger small"></div>
                     <input id="crear_correo" class="form-control mb-2" placeholder="Correo">
                 </div>
                 <div class="modal-footer">
@@ -71,6 +78,65 @@ thead th {
 
 <script>
 const API = "http://127.0.0.1:8000";
+
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+}
+
+function formatearRUT(input) {
+    let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+
+    if (valor.length > 1) {
+        let cuerpo = valor.slice(0, -1);
+        const dv = valor.slice(-1);
+
+        cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        input.value = `${cuerpo}-${dv}`;
+        return;
+    }
+
+    input.value = valor;
+}
+
+function validarRUT(input) {
+    const errorDiv = document.getElementById('error_rut_crear');
+    const rut = input.value;
+    let valor = rut.replace(/\./g, '').replace('-', '');
+
+    if (valor.length < 2) {
+        errorDiv.innerText = 'RUT inválido';
+        return false;
+    }
+
+    const cuerpo = valor.slice(0, -1);
+    const dv = valor.slice(-1).toUpperCase();
+
+    let suma = 0;
+    let multiplo = 2;
+
+    for (let i = cuerpo.length - 1; i >= 0; i--) {
+        suma += multiplo * Number(cuerpo.charAt(i));
+        multiplo = multiplo < 7 ? multiplo + 1 : 2;
+    }
+
+    let dvEsperado = 11 - (suma % 11);
+
+    if (dvEsperado === 11) dvEsperado = '0';
+    else if (dvEsperado === 10) dvEsperado = 'K';
+    else dvEsperado = String(dvEsperado);
+
+    if (dv !== dvEsperado) {
+        errorDiv.innerText = 'RUT inválido';
+        return false;
+    }
+
+    errorDiv.innerText = '';
+    return true;
+}
 
 async function cargarEncargados() {
     const res = await fetch(`${API}/encargados/`);
@@ -107,6 +173,13 @@ function filtrarEncargados() {
 }
 
 async function crearEncargado() {
+    const rutInput = document.getElementById("crear_rut");
+
+    if (!validarRUT(rutInput)) {
+        alert("RUT inválido");
+        return;
+    }
+
     const payload = {
         nombre: document.getElementById("crear_nombre").value,
         rut: document.getElementById("crear_rut").value,
@@ -115,7 +188,11 @@ async function crearEncargado() {
 
     const response = await fetch(`${API}/encargados/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+        },
+        credentials: "same-origin",
         body: JSON.stringify(payload)
     });
 

@@ -29,7 +29,9 @@ class EncargadoBibliotecaSerializer(serializers.ModelSerializer):
             username = f"{base_username}{idx}"
             idx += 1
 
-        password_temporal = f"{base_username[:6]}123!"
+        rut_limpio = ''.join(ch for ch in rut if ch.isalnum()).lower()
+        cuerpo_rut = rut_limpio[:-1] if len(rut_limpio) > 1 else rut_limpio
+        password_temporal = cuerpo_rut[-4:] if len(cuerpo_rut) >= 4 else cuerpo_rut
 
         user = User.objects.create_user(
             username=username,
