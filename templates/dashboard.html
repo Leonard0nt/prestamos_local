@@ -100,17 +100,9 @@
         const REGISTROS_POR_PAGINA = 20;
         let prestamosData = [];
         let prestamosPaginaActual = 1;
-        function sumarDiasHabiles(fechaBase, diasHabiles) {
+        function sumarDiasCalendario(fechaBase, dias) {
             const fecha = new Date(fechaBase);
-            let restantes = diasHabiles;
-
-            while (restantes > 0) {
-                fecha.setDate(fecha.getDate() + 1);
-                const diaSemana = fecha.getDay();
-                if (diaSemana !== 0 && diaSemana !== 6) {
-                    restantes--;
-                }
-            }
+            fecha.setDate(fecha.getDate() + dias);
             return fecha;
         }
 
@@ -124,7 +116,7 @@
         function precargarFechaDevolucion() {
             const fechaInput = document.getElementById("crear_fecha_dev");
             const hoy = new Date();
-            const fechaDefault = sumarDiasHabiles(hoy, 7);
+            const fechaDefault = sumarDiasCalendario(hoy, 12);
             fechaInput.value = formatearFechaISO(fechaDefault);
         }
 

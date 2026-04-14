@@ -3,15 +3,7 @@ from datetime import date, timedelta
 
 # Create your models here.
 def fecha_devolucion_default():
-    dias_habiles = 0
-    fecha = date.today()
-
-    while dias_habiles < 7:
-        fecha += timedelta(days=1)
-        if fecha.weekday() < 5:  # lunes=0 ... viernes=4
-            dias_habiles += 1
-
-    return fecha
+    return date.today() + timedelta(days=12)
 
 class prestamo(models.Model):
     ejemplar = models.ForeignKey('librosApp.Ejemplar', on_delete=models.PROTECT)
