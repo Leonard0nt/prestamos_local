@@ -92,13 +92,19 @@ def _landing_url(user):
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
-    queryset = usuario.objects.all()
+    queryset = usuario.objects.filter(activo=True)
     serializer_class = UsuarioSerializer
 
     @staticmethod
     @login_required(login_url='login')
     def usuarios_view(request):
         return render(request, 'usuarios.html')
+
+    def destroy(self, request, *args, **kwargs):
+        usuario_obj = self.get_object()
+        usuario_obj.activo = False
+        usuario_obj.save(update_fields=['activo'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
