@@ -188,6 +188,22 @@ let librosPaginaActual = 1;
 let libroActual = null;
 let tituloActual = "";
 
+function getCookie(name) {
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for (const cookie of cookies) {
+        const cookieTrimmed = cookie.trim();
+        if (cookieTrimmed.startsWith(`${name}=`)) {
+            return decodeURIComponent(cookieTrimmed.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+function getCsrfHeaders() {
+    const csrftoken = getCookie('csrftoken');
+    return csrftoken ? {"X-CSRFToken": csrftoken} : {};
+}
+
 // ================= CARGAR =================
 async function cargarLibros() {
     const res = await fetch(`${API}/libros/`);
@@ -304,18 +320,41 @@ function filtrarLibros() {
 }
 // ================= CREAR =================
 async function crearLibro() {
-    const titulo = document.getElementById("crear_titulo").value;
-    const autor = document.getElementById("crear_autor").value;
-    const editorial = document.getElementById("crear_editorial").value;
+    const titulo = document.getElementById("crear_titulo").value.trim();
+    const autor = document.getElementById("crear_autor").value.trim();
+    const editorial = document.getElementById("crear_editorial").value.trim();
     const fecha_publicacion = document.getElementById("crear_fecha").value;
-    const isbn = document.getElementById("crear_isbn").value;
-    const cantidad = document.getElementById("crear_cantidad").value;
+    const isbn = document.getElementById("crear_isbn").value.trim();
+    const cantidadRaw = document.getElementById("crear_cantidad").value;
 
-    await fetch(`${API}/libros/`, {
+    if (!titulo || !autor || !editorial || !fecha_publicacion || !isbn) {
+        alert("Completa todos los campos obligatorios para crear el libro.");
+        return;
+    }
+
+    const payload = { titulo, autor, editorial, fecha_publicacion, isbn };
+
+    if (cantidadRaw !== "") {
+        const cantidad = parseInt(cantidadRaw, 10);
+        if (Number.isNaN(cantidad) || cantidad <= 0) {
+            alert("La cantidad de ejemplares debe ser mayor a 0.");
+            return;
+        }
+        payload.cantidad = cantidad;
+    }
+
+    const res = await fetch(`${API}/libros/`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ titulo, autor, editorial, fecha_publicacion, isbn, cantidad })
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json", ...getCsrfHeaders()},
+        body: JSON.stringify(payload)
     });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.detail || JSON.stringify(errorData) || "No se pudo crear el libro.");
+        return;
+    }
 
     cargarLibros();
     bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
@@ -326,7 +365,9 @@ async function eliminarLibro(id) {
     if (!confirm("¿Eliminar libro?")) return;
 
     await fetch(`${API}/libros/${id}/`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: getCsrfHeaders()
     });
 
     cargarLibros();
@@ -336,7 +377,9 @@ async function eliminarEjemplar(id) {
     if (!confirm("¿Eliminar ejemplar?")) return;
 
     await fetch(`${API}/ejemplares/${id}/`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: getCsrfHeaders()
     });
 
     // recargar lista
@@ -368,7 +411,8 @@ async function guardarEdicion() {
 
     await fetch(`${API}/libros/${id}/`, {
         method: "PUT",
-        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json", ...getCsrfHeaders()},
         body: JSON.stringify({ titulo, autor, editorial, fecha_publicacion, isbn })
     });
 
@@ -411,8 +455,10 @@ async function confirmarAgregarEjemplares() {
 
     await fetch(`${API}/libros/${libroActual}/agregar_ejemplar/`, {
         method: "POST",
+        credentials: "same-origin",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            ...getCsrfHeaders()
         },
         body: JSON.stringify({ cantidad })
     });
