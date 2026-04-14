@@ -21,7 +21,7 @@ thead th {
 <body style="background-color: #f1f3f5;">
 
     {% include 'partials/app_menu.html' with active='usuarios' %}
-
+    <form style="display:none;">{% csrf_token %}</form>
 <!-- CONTENEDOR CENTRADO -->
 <div class="d-flex justify-content-center py-4">
 
@@ -133,6 +133,23 @@ const API = window.location.origin;
 const REGISTROS_POR_PAGINA = 20;
 let usuariosData = [];
 let usuariosPaginaActual = 1;
+
+
+function getCookie(name) {
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for (const cookie of cookies) {
+        const cookieTrimmed = cookie.trim();
+        if (cookieTrimmed.startsWith(`${name}=`)) {
+            return decodeURIComponent(cookieTrimmed.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+function getCsrfHeaders() {
+    const csrftoken = getCookie('csrftoken');
+    return csrftoken ? { "X-CSRFToken": csrftoken } : {};
+}
 
 // ================= CARGAR =================
 async function cargarUsuarios() {
@@ -293,7 +310,10 @@ async function crearUsuario() {
 
     await fetch(`${API}/usuarios/`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: {
+            "Content-Type": "application/json",
+            ...getCsrfHeaders()
+        },
         body: JSON.stringify({ nombre, email, rut, telefono })
     });
 
@@ -316,7 +336,10 @@ async function eliminarUsuario(id) {
     if (!confirm("¿Eliminar usuario?")) return;
 
     await fetch(`${API}/usuarios/${id}/`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: {
+            ...getCsrfHeaders()
+        }
     });
 
     cargarUsuarios();
@@ -339,8 +362,9 @@ async function guardarEdicion() {
 
     const nombre = document.getElementById("edit_nombre").value;
     const email = document.getElementById("edit_email").value;
-    const rut = document.getElementById("edit_rut").value;
-    if (!validarRUT(rut)) {
+    const rutInput = document.getElementById("edit_rut");
+    const rut = rutInput.value;
+    if (!validarRUT(rutInput)) {
     alert("RUT inválido");
     return;
 }
@@ -348,7 +372,10 @@ async function guardarEdicion() {
 
     await fetch(`${API}/usuarios/${id}/`, {
         method: "PUT",
-        headers: {"Content-Type": "application/json"},
+        headers: {
+            "Content-Type": "application/json",
+            ...getCsrfHeaders()
+        },
         body: JSON.stringify({ nombre, email, rut, telefono })
     });
 
