@@ -53,7 +53,7 @@ class LibroViewSet(ModelViewSet):
             ultimo_num = 0
 
         for i in range(1, cantidad + 1):
-            codigo = f"{libro.id}-{ultimo_num + i}"
+            codigo = f"{libro.codigo_libro}-{ultimo_num + i}"
 
             ejemplar = Ejemplar.objects.create(
                 libro=libro,

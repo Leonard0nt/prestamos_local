@@ -21,7 +21,7 @@ class LibroSerializer(serializers.ModelSerializer):
         for i in range(cantidad):
             Ejemplar.objects.create(
                 libro=libro,
-                codigo=f"{libro.id}-{i+1}"
+                codigo=f"{libro.codigo_libro}-{i + 1}"
             )
 
         return libro

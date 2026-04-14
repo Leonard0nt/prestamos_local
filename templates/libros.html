@@ -35,7 +35,7 @@ thead, tbody, tr, td, th {
         <input type="text"
        id="buscadorLibros"
        class="form-control mb-3"
-       placeholder="🔍 Buscar por título, autor, editorial o ISBN..."
+       placeholder="🔍 Buscar por título, autor, editorial o código..."
        onkeyup="filtrarLibros()">
         <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalCrear">
             ➕ Agregar Libro
@@ -48,7 +48,7 @@ thead, tbody, tr, td, th {
                     <th>Autor</th>
                     <th>Editorial</th>
                     <th>Fecha registro</th>
-                    <th>ISBN</th>
+                    <th>Código</th>
                     <th>Ejemplares</th>
                     <th>Acciones</th>
                 </tr>
@@ -76,7 +76,7 @@ thead, tbody, tr, td, th {
         <input id="crear_autor" class="form-control mb-2" placeholder="Autor">
         <input id="crear_editorial" class="form-control mb-2" placeholder="Editorial">
         <input id="crear_fecha" type="date" class="form-control mb-2">
-        <input id="crear_isbn" class="form-control mb-2" placeholder="ISBN">
+        <input id="crear_codigo" class="form-control mb-2" placeholder="Código del libro">
         <input id="crear_cantidad" type="number" class="form-control mb-2" placeholder="Cantidad de ejemplares">
 
       </div>
@@ -102,7 +102,7 @@ thead, tbody, tr, td, th {
         <input id="edit_autor" class="form-control mb-2">
         <input id="edit_editorial" class="form-control mb-2">
         <input id="edit_fecha" type="date" class="form-control mb-2">
-        <input id="edit_isbn" class="form-control mb-2">
+        <input id="edit_codigo" class="form-control mb-2">
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -219,7 +219,7 @@ function obtenerLibrosFiltrados() {
             libro.titulo.toLowerCase().includes(filtro) ||
             libro.autor.toLowerCase().includes(filtro) ||
             libro.editorial.toLowerCase().includes(filtro) ||
-            libro.isbn.toLowerCase().includes(filtro)
+            libro.codigo_libro.toLowerCase().includes(filtro)
         );
     });
 }
@@ -243,11 +243,11 @@ function renderizarTablaLibros() {
                 <td>${l.titulo}</td>
                 <td>${l.autor}</td>
                 <td>${l.editorial}</td>
-                <td>${l.fecha_publicacion}</td>
-                <td>${l.isbn}</td>
+                <td>${l.fecha_registro}</td>
+                <td>${l.codigo_libro}</td>
                 <td>
                     <button class="btn btn-outline-primary btn-sm"
-                        onclick="verEjemplares(${l.id}, '${l.titulo}', '${l.isbn}')">
+                        onclick="verEjemplares(${l.id}, '${l.titulo}', '${l.codigo_libro}')">
                         Ver (${l.cantidad_ejemplares})
                     </button>
                 </td>
@@ -323,16 +323,16 @@ async function crearLibro() {
     const titulo = document.getElementById("crear_titulo").value.trim();
     const autor = document.getElementById("crear_autor").value.trim();
     const editorial = document.getElementById("crear_editorial").value.trim();
-    const fecha_publicacion = document.getElementById("crear_fecha").value;
-    const isbn = document.getElementById("crear_isbn").value.trim();
+    const fecha_registro = document.getElementById("crear_fecha").value;
+    const codigo_libro = document.getElementById("crear_codigo").value.trim();
     const cantidadRaw = document.getElementById("crear_cantidad").value;
 
-    if (!titulo || !autor || !editorial || !fecha_publicacion || !isbn) {
+    if (!titulo || !autor || !editorial || !fecha_registro || !codigo_libro) {
         alert("Completa todos los campos obligatorios para crear el libro.");
         return;
     }
 
-    const payload = { titulo, autor, editorial, fecha_publicacion, isbn };
+    const payload = { titulo, autor, editorial, fecha_registro, codigo_libro };
 
     if (cantidadRaw !== "") {
         const cantidad = parseInt(cantidadRaw, 10);
@@ -393,8 +393,8 @@ function abrirEditar(l) {
     document.getElementById("edit_titulo").value = l.titulo;
     document.getElementById("edit_autor").value = l.autor;
     document.getElementById("edit_editorial").value = l.editorial;
-    document.getElementById("edit_fecha").value = l.fecha_publicacion;
-    document.getElementById("edit_isbn").value = l.isbn;
+    document.getElementById("edit_fecha").value = l.fecha_registro;
+    document.getElementById("edit_codigo").value = l.codigo_libro;
 
     const modal = new bootstrap.Modal(document.getElementById("modalEditar"));
     modal.show();
@@ -406,27 +406,27 @@ async function guardarEdicion() {
     const titulo = document.getElementById("edit_titulo").value;
     const autor = document.getElementById("edit_autor").value;
     const editorial = document.getElementById("edit_editorial").value;
-    const fecha_publicacion = document.getElementById("edit_fecha").value;
-    const isbn = document.getElementById("edit_isbn").value;
+    const fecha_registro = document.getElementById("edit_fecha").value;
+    const codigo_libro = document.getElementById("edit_codigo").value;
 
     await fetch(`${API}/libros/${id}/`, {
         method: "PUT",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json", ...getCsrfHeaders()},
-        body: JSON.stringify({ titulo, autor, editorial, fecha_publicacion, isbn })
+        body: JSON.stringify({ titulo, autor, editorial, fecha_registro, codigo_libro })
     });
 
     cargarLibros();
     bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
 }
 // ================= VER EJEMPLARES =================
-async function verEjemplares(libro_id, titulo, isbn) {
+async function verEjemplares(libro_id, titulo, codigo_libro) {
 
     libroActual = libro_id; // ← guardar ID
     tituloActual = titulo;
 
     document.getElementById("tituloEjemplares").innerText =
-        "Ejemplares de: " + titulo + " (ISBN: " + isbn + ")";
+        "Ejemplares de: " + titulo + " (Código: " + codigo_libro + ")";
 
     await cargarEjemplares(libro_id);
 
