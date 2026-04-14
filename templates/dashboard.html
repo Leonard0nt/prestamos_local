@@ -98,6 +98,7 @@
         const csrfToken = getCookie("csrftoken");
 
         const REGISTROS_POR_PAGINA = 20;
+        const INTERVALO_ACTUALIZACION_MS = 10000;
         let prestamosData = [];
         let prestamosPaginaActual = 1;
         function sumarDiasCalendario(fechaBase, dias) {
@@ -162,10 +163,13 @@ async function cargarEjemplaresLibro() {
     }
 }
         // ================= CARGAR =================
-        async function cargarPrestamos() {
+        async function cargarPrestamos(opciones = {}) {
+            const { reiniciarPagina = false } = opciones;
             const res = await fetch(`${API}/prestamos/`);
             prestamosData = await res.json();
-            prestamosPaginaActual = 1;
+            if (reiniciarPagina) {
+                prestamosPaginaActual = 1;
+            }
             renderizarTablaPrestamos();
         }
 
@@ -295,8 +299,6 @@ async function cargarSelects() {
                 alert(errorData.detail || errorData.non_field_errors?.[0] || "No se pudo registrar el préstamo");
                 return;
             }
-
-            await cargarPrestamos();
             await cargarEjemplaresLibro();
             bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
         }
@@ -335,8 +337,13 @@ async function cargarSelects() {
         }
 
         // ================= INIT =================
-        cargarPrestamos();
+        cargarPrestamos({ reiniciarPagina: true });
         cargarSelects();
+        setInterval(() => {
+            if (!document.hidden) {
+                cargarPrestamos();
+            }
+        }, INTERVALO_ACTUALIZACION_MS);
         modalCrear.addEventListener('shown.bs.modal', precargarFechaDevolucion);
     </script>
 
