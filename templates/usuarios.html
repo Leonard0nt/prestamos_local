@@ -131,9 +131,10 @@ thead th {
 <script>
 const API = window.location.origin;
 const REGISTROS_POR_PAGINA = 20;
+const REFRESH_INTERVAL_MS = 10000;
 let usuariosData = [];
 let usuariosPaginaActual = 1;
-
+let usuariosAutoRefreshId = null;
 
 function getCookie(name) {
     const cookies = document.cookie ? document.cookie.split(';') : [];
@@ -152,10 +153,22 @@ function getCsrfHeaders() {
 }
 
 // ================= CARGAR =================
-async function cargarUsuarios() {
+async function cargarUsuarios({ resetPagina = false } = {}) {
     const res = await fetch(`${API}/usuarios/`);
-    usuariosData = await res.json();
-    usuariosPaginaActual = 1;
+    if (!res.ok) return;
+
+    const nuevosUsuarios = await res.json();
+    const cambioDatos = JSON.stringify(nuevosUsuarios) !== JSON.stringify(usuariosData);
+
+    usuariosData = nuevosUsuarios;
+    if (resetPagina) {
+        usuariosPaginaActual = 1;
+    }
+
+    if (!cambioDatos && !resetPagina) {
+        return;
+    }
+
     renderizarTablaUsuarios();
 }
 
@@ -317,7 +330,7 @@ async function crearUsuario() {
         body: JSON.stringify({ nombre, email, rut, telefono })
     });
 
-    cargarUsuarios();
+    cargarUsuarios({ resetPagina: true });
     bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
 }
 // Limitar 9 numeros en telefono
@@ -342,7 +355,7 @@ async function eliminarUsuario(id) {
         }
     });
 
-    cargarUsuarios();
+    cargarUsuarios({ resetPagina: true });
 }
 
 // ================= EDITAR =================
@@ -382,9 +395,18 @@ async function guardarEdicion() {
     cargarUsuarios();
     bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
 }
+function iniciarAutoRefreshUsuarios() {
+    if (usuariosAutoRefreshId) return;
+
+    usuariosAutoRefreshId = setInterval(() => {
+        if (document.visibilityState !== "visible") return;
+        cargarUsuarios();
+    }, REFRESH_INTERVAL_MS);
+}
 
 // ================= INIT =================
-cargarUsuarios();
+cargarUsuarios({ resetPagina: true });
+iniciarAutoRefreshUsuarios();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
