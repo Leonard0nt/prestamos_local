@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 class usuario(models.Model):
     rut = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
+    curso = models.CharField(max_length=100, blank=True, default='')
     email = models.EmailField(unique=False)
     telefono = models.CharField(max_length=20)
     activo = models.BooleanField(default=True)

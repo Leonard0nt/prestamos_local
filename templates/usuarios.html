@@ -45,6 +45,7 @@ thead th {
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
+                    <th>Curso</th>
                     <th>Email</th>
                     <th>RUT</th>
                     <th>Teléfono</th>
@@ -72,6 +73,7 @@ thead th {
       <div class="modal-body">
         <input id="crear_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="crear_apellidos" class="form-control mb-2" placeholder="Apellidos">
+        <input id="crear_curso" class="form-control mb-2" placeholder="Curso">
         <input id="crear_rut"
        class="form-control mb-2"
        placeholder="12.345.678-5"
@@ -109,6 +111,7 @@ thead th {
         <input id="edit_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="edit_apellidos" class="form-control mb-2" placeholder="Apellidos">
         <input id="edit_email" class="form-control mb-2">
+        <input id="edit_curso" class="form-control mb-2" placeholder="Curso">
         <input id="edit_rut"
        class="form-control mb-2"
        oninput="formatearRUT(this)"
@@ -180,6 +183,7 @@ function obtenerUsuariosFiltrados() {
         return (
             usuario.nombre.toLowerCase().includes(filtro) ||
             usuario.rut.toLowerCase().includes(filtro) ||
+            (usuario.curso || "").toLowerCase().includes(filtro) ||
             usuario.email.toLowerCase().includes(filtro)
         );
     });
@@ -195,13 +199,14 @@ function renderizarTablaUsuarios() {
 
     tabla.innerHTML = "";
     if (!paginaData.length) {
-        tabla.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Sin resultados.</td></tr>`;
+        tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
     paginaData.forEach(u => {
         tabla.innerHTML += `
             <tr>
                 <td>${u.nombre}</td>
+                <td>${u.curso || ""}</td>
                 <td>${u.email}</td>
                 <td>${u.rut}</td>
                 <td>${u.telefono}</td>
@@ -339,6 +344,7 @@ async function crearUsuario() {
     const apellidos = document.getElementById("crear_apellidos").value;
     const nombre = construirNombreCompleto(nombres, apellidos);
     const email = document.getElementById("crear_email").value;
+    const curso = document.getElementById("crear_curso").value.trim();
     const rutInput = document.getElementById("crear_rut");
     const rut = rutInput.value;
 
@@ -355,7 +361,7 @@ async function crearUsuario() {
             "Content-Type": "application/json",
             ...getCsrfHeaders()
         },
-        body: JSON.stringify({ nombre, email, rut, telefono })
+        body: JSON.stringify({ nombre, curso, email, rut, telefono })
     });
 
     cargarUsuarios({ resetPagina: true });
@@ -392,6 +398,7 @@ function abrirEditar(u) {
     document.getElementById("edit_id").value = u.id;
     document.getElementById("edit_nombres").value = nombres;
     document.getElementById("edit_apellidos").value = apellidos;
+    document.getElementById("edit_curso").value = u.curso || "";
     document.getElementById("edit_email").value = u.email;
     document.getElementById("edit_rut").value = u.rut;
     document.getElementById("edit_telefono").value = u.telefono.replace("+56", "");
@@ -406,6 +413,7 @@ async function guardarEdicion() {
     const nombres = document.getElementById("edit_nombres").value;
     const apellidos = document.getElementById("edit_apellidos").value;
     const nombre = construirNombreCompleto(nombres, apellidos);
+    const curso = document.getElementById("edit_curso").value.trim();
     const email = document.getElementById("edit_email").value;
     const rutInput = document.getElementById("edit_rut");
     const rut = rutInput.value;
@@ -421,7 +429,7 @@ async function guardarEdicion() {
             "Content-Type": "application/json",
             ...getCsrfHeaders()
         },
-        body: JSON.stringify({ nombre, email, rut, telefono })
+        body: JSON.stringify({ nombre, curso, email, rut, telefono })
     });
 
     cargarUsuarios();
