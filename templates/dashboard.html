@@ -102,6 +102,7 @@
       <div class="modal-body">
         <p class="mb-2"><strong>Nombre:</strong> <span id="detalle_nombre"></span></p>
         <p class="mb-2"><strong>Email:</strong> <span id="detalle_email"></span></p>
+        <p class="mb-2"><strong>Curso:</strong> <span id="detalle_curso"></span></p>
         <p class="mb-2"><strong>RUT:</strong> <span id="detalle_rut"></span></p>
         <p class="mb-0"><strong>Teléfono:</strong> <span id="detalle_telefono"></span></p>
       </div>
@@ -255,6 +256,7 @@ async function cargarEjemplaresLibro() {
         function mostrarDetalleUsuario(usuario) {
             document.getElementById("detalle_nombre").textContent = usuario.nombre || "Sin información";
             document.getElementById("detalle_email").textContent = usuario.email || "Sin información";
+            document.getElementById("detalle_curso").textContent = usuario.curso || "Sin información";
             document.getElementById("detalle_rut").textContent = usuario.rut || "Sin información";
             document.getElementById("detalle_telefono").textContent = usuario.telefono || "Sin información";
 
