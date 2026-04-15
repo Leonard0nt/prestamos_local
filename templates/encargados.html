@@ -63,7 +63,8 @@ thead th {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input id="crear_nombre" class="form-control mb-2" placeholder="Nombre">
+                    <input id="crear_nombres" class="form-control mb-2" placeholder="Nombres">
+                    <input id="crear_apellidos" class="form-control mb-2" placeholder="Apellidos">
                     <input id="crear_rut"
                            class="form-control mb-2"
                            placeholder="12.345.678-5"
@@ -89,7 +90,8 @@ thead th {
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="edit_id">
-                    <input id="edit_nombre" class="form-control mb-2" placeholder="Nombre">
+                    <input id="edit_nombres" class="form-control mb-2" placeholder="Nombres">
+                    <input id="edit_apellidos" class="form-control mb-2" placeholder="Apellidos">
                     <input id="edit_rut"
                            class="form-control mb-2"
                            placeholder="12.345.678-5"
@@ -170,6 +172,30 @@ function validarRUT(input) {
 
     errorDiv.innerText = '';
     return true;
+}
+
+function separarNombreCompleto(nombreCompleto = "") {
+    const nombreLimpio = (nombreCompleto || "").trim().replace(/\s+/g, " ");
+    if (!nombreLimpio) {
+        return { nombres: "", apellidos: "" };
+    }
+
+    const partes = nombreLimpio.split(" ");
+    if (partes.length === 1) {
+        return { nombres: partes[0], apellidos: "" };
+    }
+
+    return {
+        nombres: partes.slice(0, -1).join(" "),
+        apellidos: partes.slice(-1).join(" ")
+    };
+}
+
+function construirNombreCompleto(nombres, apellidos) {
+    return [nombres, apellidos]
+        .map((valor) => (valor || "").trim())
+        .filter(Boolean)
+        .join(" ");
 }
 
 async function cargarEncargados() {
@@ -268,7 +294,10 @@ async function crearEncargado() {
     }
 
     const payload = {
-        nombre: document.getElementById("crear_nombre").value,
+        nombre: construirNombreCompleto(
+            document.getElementById("crear_nombres").value,
+            document.getElementById("crear_apellidos").value
+        ),
         rut: document.getElementById("crear_rut").value,
         correo: document.getElementById("crear_correo").value,
     };
@@ -299,8 +328,10 @@ async function crearEncargado() {
 }
 
 function abrirEditar(e) {
+    const { nombres, apellidos } = separarNombreCompleto(e.nombre);
     document.getElementById("edit_id").value = e.id;
-    document.getElementById("edit_nombre").value = e.nombre;
+    document.getElementById("edit_nombres").value = nombres;
+    document.getElementById("edit_apellidos").value = apellidos;
     document.getElementById("edit_rut").value = e.rut;
     document.getElementById("edit_correo").value = e.correo;
 
@@ -318,7 +349,10 @@ async function guardarEdicion() {
     }
 
     const payload = {
-        nombre: document.getElementById("edit_nombre").value,
+        nombre: construirNombreCompleto(
+            document.getElementById("edit_nombres").value,
+            document.getElementById("edit_apellidos").value
+        ),
         rut: rutInput.value,
         correo: document.getElementById("edit_correo").value,
     };
