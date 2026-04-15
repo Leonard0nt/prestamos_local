@@ -4,6 +4,7 @@ from .models import Libro, Ejemplar
 class LibroSerializer(serializers.ModelSerializer):
 
     cantidad_ejemplares = serializers.SerializerMethodField()
+    cantidad_disponibles = serializers.SerializerMethodField()
     cantidad = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
@@ -12,6 +13,9 @@ class LibroSerializer(serializers.ModelSerializer):
 
     def get_cantidad_ejemplares(self, obj):
         return obj.ejemplar_set.count()
+
+    def get_cantidad_disponibles(self, obj):
+        return obj.ejemplar_set.filter(estado='disponible').count()
 
     def create(self, validated_data):
         cantidad = validated_data.pop('cantidad', 0)

@@ -120,6 +120,7 @@
         const REGISTROS_POR_PAGINA = 20;
         const INTERVALO_ACTUALIZACION_MS = 10000;
         let prestamosData = [];
+        let usuariosData = [];
         let prestamosPaginaActual = 1;
         function sumarDiasCalendario(fechaBase, dias) {
             const fecha = new Date(fechaBase);
@@ -222,7 +223,13 @@ async function cargarEjemplaresLibro() {
             paginaData.forEach(p => {
                 tabla.innerHTML += `
             <tr>
-                <td>${p.usuario_detalle}</td>
+                <td>
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                        type="button"
+                        onclick="abrirDetalleUsuario(${p.usuario})">
+                        ${p.usuario_detalle}
+                    </button>
+                </td>
                 <td>${p.ejemplar_detalle}</td>
                 <td>${p.fecha_prestamo}</td>
                 <td>${p.fecha_devolucion}</td>
@@ -243,6 +250,33 @@ async function cargarEjemplaresLibro() {
             });
 
             renderizarPaginacionPrestamos(totalPaginas);
+        }
+
+        function mostrarDetalleUsuario(usuario) {
+            document.getElementById("detalle_nombre").textContent = usuario.nombre || "Sin información";
+            document.getElementById("detalle_email").textContent = usuario.email || "Sin información";
+            document.getElementById("detalle_rut").textContent = usuario.rut || "Sin información";
+            document.getElementById("detalle_telefono").textContent = usuario.telefono || "Sin información";
+
+            const modal = new bootstrap.Modal(document.getElementById("modalDetalleUsuario"));
+            modal.show();
+        }
+
+        async function abrirDetalleUsuario(usuarioId) {
+            const usuarioLocal = usuariosData.find((u) => u.id === usuarioId);
+            if (usuarioLocal) {
+                mostrarDetalleUsuario(usuarioLocal);
+                return;
+            }
+
+            const response = await fetch(`${API}/usuarios/${usuarioId}/`);
+            if (!response.ok) {
+                alert("No se pudo cargar el detalle del usuario.");
+                return;
+            }
+
+            const usuario = await response.json();
+            mostrarDetalleUsuario(usuario);
         }
 
         function renderizarPaginacionPrestamos(totalPaginas) {
@@ -275,7 +309,8 @@ async function cargarSelects() {
 
     const usuarios = await fetch(`${API}/usuarios/`).then(r => r.json());
     const libros = await fetch(`${API}/libros/`).then(r => r.json());
-
+    usuariosData = usuarios;
+    
     const selUser = document.getElementById("crear_usuario");
     const selLibro = document.getElementById("crear_libro");
 
