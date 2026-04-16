@@ -73,6 +73,7 @@ thead th {
       <div class="modal-body">
         <input id="crear_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="crear_apellidos" class="form-control mb-2" placeholder="Apellidos">
+        <input id="crear_email" type="email" class="form-control mb-2" placeholder="Correo electrónico">
         <input id="crear_curso" class="form-control mb-2" placeholder="Curso">
         <input id="crear_rut"
        class="form-control mb-2"
@@ -343,7 +344,7 @@ async function crearUsuario() {
     const nombres = document.getElementById("crear_nombres").value;
     const apellidos = document.getElementById("crear_apellidos").value;
     const nombre = construirNombreCompleto(nombres, apellidos);
-    const email = document.getElementById("crear_email").value;
+    const email = document.getElementById("crear_email").value.trim();
     const curso = document.getElementById("crear_curso").value.trim();
     const rutInput = document.getElementById("crear_rut");
     const rut = rutInput.value;
@@ -355,7 +356,8 @@ async function crearUsuario() {
 
     const telefono = "+56" + document.getElementById("crear_telefono").value;
 
-    await fetch(`${API}/usuarios/`, {
+
+    const response = await fetch(`${API}/usuarios/`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -363,6 +365,14 @@ async function crearUsuario() {
         },
         body: JSON.stringify({ nombre, curso, email, rut, telefono })
     });
+    if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        const errores = Object.entries(errorPayload)
+            .map(([campo, mensajes]) => `${campo}: ${Array.isArray(mensajes) ? mensajes.join(", ") : mensajes}`)
+            .join("\n");
+        alert(`No se pudo guardar el usuario.${errores ? `\n${errores}` : ""}`);
+        return;
+    }
 
     cargarUsuarios({ resetPagina: true });
     bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
