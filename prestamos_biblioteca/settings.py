@@ -11,40 +11,25 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
-import environ
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-RUNTIME_DIR = Path(os.getenv('APP_RUNTIME_DIR', BASE_DIR))
-
-# Cargar variables de entorno
-env = environ.Env()
-# Prioridad de archivos .env:
-# 1) carpeta donde corre la app (para ejecutable local)
-# 2) raíz del proyecto (desarrollo)
-# 3) cwd actual (fallback)
-env_files = [
-    RUNTIME_DIR / '.env',
-    BASE_DIR / '.env',
-    Path.cwd() / '.env',
-]
-
-for env_file in env_files:
-    if env_file.exists():
-        environ.Env.read_env(env_file)
-
-
+RUNTIME_DIR = Path(os.getenv("APP_RUNTIME_DIR", BASE_DIR))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-clave-temporal")
+# Pega tu SECRET_KEY aquí:
+SECRET_KEY = "django-insecure-$r0h283k!(wfp4vn&*2f*jq5j!(-s_0k87vq%v%)paefi3@4q%l"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", default=True)
+DEBUG = os.getenv("DEBUG", "True").lower() in ("1", "true", "yes", "on")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+raw_allowed_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
+ALLOWED_HOSTS = [host.strip() for host in raw_allowed_hosts.split(",") if host.strip()]
 
 
 # Application definition
@@ -95,32 +80,21 @@ WSGI_APPLICATION = "prestamos_biblioteca.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-default_db_path = RUNTIME_DIR / 'db.sqlite3'
-db_engine = env('DB_ENGINE', default='django.db.backends.sqlite3')
-
-if db_engine == 'django.db.backends.sqlite3':
-    DATABASES = {
-        'default': {
-            'ENGINE': db_engine,
-            'NAME': env('DB_NAME', default=str(default_db_path)),
-        }
+raw_db_name = os.getenv("DB_NAME", "db.sqlite3")
+db_name_path = Path(raw_db_name).expanduser()
+sqlite_db_path = db_name_path if db_name_path.is_absolute() else (RUNTIME_DIR / db_name_path.name)
+default_db_path = RUNTIME_DIR / "db.sqlite3"
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(sqlite_db_path),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': db_engine,
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER', default=''),
-            'PASSWORD': env('DB_PASSWORD', default=''),
-            'HOST': env('DB_HOST', default='localhost'),
-            'PORT': env('DB_PORT', default='5432'),
-        }
-    }
+}
 
 
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/6.0/topics/auth/passwords/
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -150,8 +124,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

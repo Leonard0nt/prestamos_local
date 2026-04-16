@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from datetime import date
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from .models import prestamo
 from .serializers import PrestamoSerializer
@@ -12,7 +11,6 @@ class PrestamoViewSet(viewsets.ModelViewSet):
     serializer_class = PrestamoSerializer
 
     @staticmethod
-    @login_required(login_url='login')
     def dashboard(request):
         return render(request, 'dashboard.html')
 

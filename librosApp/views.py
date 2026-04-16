@@ -1,4 +1,3 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from .models import Libro, Ejemplar
 from .serializers import LibroSerializer, EjemplarSerializer
@@ -12,13 +11,11 @@ class LibroViewSet(ModelViewSet):
     serializer_class = LibroSerializer
 
     @staticmethod
-    @login_required(login_url='login')
     def libros_view(request):
         libros = Libro.objects.all()
         return render(request, 'libros.html', {'libros': libros})
 
     @staticmethod
-    @login_required(login_url='login')  
     def ejemplares_view(request, libro_id):
         libro = get_object_or_404(Libro, id=libro_id)
         ejemplares = Ejemplar.objects.filter(libro=libro)
