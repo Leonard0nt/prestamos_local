@@ -9,16 +9,30 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+RUNTIME_DIR = Path(os.getenv('APP_RUNTIME_DIR', BASE_DIR))
 
 # Cargar variables de entorno
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
+# Prioridad de archivos .env:
+# 1) carpeta donde corre la app (para ejecutable local)
+# 2) raíz del proyecto (desarrollo)
+# 3) cwd actual (fallback)
+env_files = [
+    RUNTIME_DIR / '.env',
+    BASE_DIR / '.env',
+    Path.cwd() / '.env',
+]
+
+for env_file in env_files:
+    if env_file.exists():
+        environ.Env.read_env(env_file)
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -81,16 +95,28 @@ WSGI_APPLICATION = "prestamos_biblioteca.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+default_db_path = RUNTIME_DIR / 'db.sqlite3'
+db_engine = env('DB_ENGINE', default='django.db.backends.sqlite3')
+
+if db_engine == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': db_engine,
+            'NAME': env('DB_NAME', default=str(default_db_path)),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': db_engine,
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER', default=''),
+            'PASSWORD': env('DB_PASSWORD', default=''),
+            'HOST': env('DB_HOST', default='localhost'),
+            'PORT': env('DB_PORT', default='5432'),
+        }
+    }
+
 
 
 # Password validation
