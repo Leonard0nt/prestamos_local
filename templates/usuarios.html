@@ -45,6 +45,9 @@ thead th {
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
+                    {% if request.user.is_superuser %}
+                    <th>Nivel</th>
+                    {% endif %}
                     <th>Curso</th>
                     <th>Email</th>
                     <th>RUT</th>
@@ -73,7 +76,7 @@ thead th {
       <div class="modal-body">
         <input id="crear_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="crear_apellidos" class="form-control mb-2" placeholder="Apellidos">
-        <input id="crear_email" type="email" class="form-control mb-2" placeholder="Correo electrónico">
+        <input id="crear_email" class="form-control mb-2" placeholder="Email">
         <input id="crear_curso" class="form-control mb-2" placeholder="Curso">
         <input id="crear_rut"
        class="form-control mb-2"
@@ -89,6 +92,13 @@ thead th {
            placeholder="912345678"
            oninput="validarTelefono(this)">
 </div>
+        {% if request.user.is_superuser %}
+        <select id="crear_nivel" class="form-control mb-2">
+            <option value="">Selecciona nivel</option>
+            <option value="BASICA">Basica</option>
+            <option value="MEDIA">Media</option>
+        </select>
+        {% endif %}
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -136,6 +146,7 @@ thead th {
 
 <script>
 const API = window.location.origin;
+const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
 const REGISTROS_POR_PAGINA = 20;
 const REFRESH_INTERVAL_MS = 10000;
 let usuariosData = [];
@@ -185,7 +196,8 @@ function obtenerUsuariosFiltrados() {
             usuario.nombre.toLowerCase().includes(filtro) ||
             usuario.rut.toLowerCase().includes(filtro) ||
             (usuario.curso || "").toLowerCase().includes(filtro) ||
-            usuario.email.toLowerCase().includes(filtro)
+            usuario.email.toLowerCase().includes(filtro) ||
+            (usuario.nivel_pertenencia || "").toLowerCase().includes(filtro)
         );
     });
 }
@@ -200,13 +212,15 @@ function renderizarTablaUsuarios() {
 
     tabla.innerHTML = "";
     if (!paginaData.length) {
-        tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Sin resultados.</td></tr>`;
+        const columnas = ES_ADMIN ? 7 : 6;
+        tabla.innerHTML = `<tr><td colspan="${columnas}" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
     paginaData.forEach(u => {
         tabla.innerHTML += `
             <tr>
                 <td>${u.nombre}</td>
+                ${ES_ADMIN ? `<td>${u.nivel_pertenencia || "-"}</td>` : ""}
                 <td>${u.curso || ""}</td>
                 <td>${u.email}</td>
                 <td>${u.rut}</td>
@@ -215,8 +229,8 @@ function renderizarTablaUsuarios() {
                     <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(u)})'>
                         Editar
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${u.id})">
-                        Eliminar
+                    <button class="btn btn-danger btn-sm" onclick="desactivarUsuario(${u.id})">
+                        Dar de baja
                     </button>
                 </td>
             </tr>
@@ -348,6 +362,7 @@ async function crearUsuario() {
     const curso = document.getElementById("crear_curso").value.trim();
     const rutInput = document.getElementById("crear_rut");
     const rut = rutInput.value;
+    const nivel_asignado = ES_ADMIN ? document.getElementById("crear_nivel").value : null;
 
     if (!validarRUT(rutInput)) {
         alert("RUT inválido");
@@ -355,7 +370,14 @@ async function crearUsuario() {
     }
 
     const telefono = "+56" + document.getElementById("crear_telefono").value;
-
+    const payload = { nombre, curso, email, rut, telefono };
+    if (ES_ADMIN) {
+        if (!nivel_asignado) {
+            alert("Debes seleccionar el nivel (Basica o Media).");
+            return;
+        }
+        payload.nivel_asignado = nivel_asignado;
+    }
 
     const response = await fetch(`${API}/usuarios/`, {
         method: "POST",
@@ -363,17 +385,14 @@ async function crearUsuario() {
             "Content-Type": "application/json",
             ...getCsrfHeaders()
         },
-        body: JSON.stringify({ nombre, curso, email, rut, telefono })
+        body: JSON.stringify(payload)
     });
     if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({}));
-        const errores = Object.entries(errorPayload)
-            .map(([campo, mensajes]) => `${campo}: ${Array.isArray(mensajes) ? mensajes.join(", ") : mensajes}`)
-            .join("\n");
-        alert(`No se pudo guardar el usuario.${errores ? `\n${errores}` : ""}`);
+        const data = await response.json().catch(() => ({}));
+        alert(data.detail || JSON.stringify(data) || "No se pudo crear el usuario.");
         return;
     }
-
+    
     cargarUsuarios({ resetPagina: true });
     bootstrap.Modal.getInstance(document.getElementById('modalCrear')).hide();
 }
@@ -388,18 +407,24 @@ function validarTelefono(input) {
     }
 }
 
-// ================= ELIMINAR =================
-async function eliminarUsuario(id) {
-    if (!confirm("¿Eliminar usuario?")) return;
+// ================= DESACTIVAR =================
+async function desactivarUsuario(id) {
+    if (!confirm("¿Dar de baja al usuario? Se conservará su historial.")) return;
 
-    await fetch(`${API}/usuarios/${id}/`, {
+    const response = await fetch(`${API}/usuarios/${id}/`, {
         method: "DELETE",
         headers: {
             ...getCsrfHeaders()
         }
     });
 
-    cargarUsuarios({ resetPagina: true });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo desactivar el usuario.");
+        return;
+    }
+
+    alert(data.detail || "Usuario desactivado correctamente.");
 }
 
 // ================= EDITAR =================
@@ -424,7 +449,7 @@ async function guardarEdicion() {
     const apellidos = document.getElementById("edit_apellidos").value;
     const nombre = construirNombreCompleto(nombres, apellidos);
     const curso = document.getElementById("edit_curso").value.trim();
-    const email = document.getElementById("edit_email").value;
+    const email = document.getElementById("edit_email").value.trim();
     const rutInput = document.getElementById("edit_rut");
     const rut = rutInput.value;
     if (!validarRUT(rutInput)) {

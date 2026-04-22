@@ -9,27 +9,28 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-import os
+
 from pathlib import Path
-
-
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-RUNTIME_DIR = Path(os.getenv("APP_RUNTIME_DIR", BASE_DIR))
+
+# Cargar variables de entorno
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / ".env")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Pega tu SECRET_KEY aquí:
-SECRET_KEY = "django-insecure-$r0h283k!(wfp4vn&*2f*jq5j!(-s_0k87vq%v%)paefi3@4q%l"
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-clave-temporal")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() in ("1", "true", "yes", "on")
+DEBUG = env.bool("DEBUG", default=True)
 
-raw_allowed_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
-ALLOWED_HOSTS = [host.strip() for host in raw_allowed_hosts.split(",") if host.strip()]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 
 # Application definition
@@ -80,21 +81,20 @@ WSGI_APPLICATION = "prestamos_biblioteca.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-raw_db_name = os.getenv("DB_NAME", "db.sqlite3")
-db_name_path = Path(raw_db_name).expanduser()
-sqlite_db_path = db_name_path if db_name_path.is_absolute() else (RUNTIME_DIR / db_name_path.name)
-default_db_path = RUNTIME_DIR / "db.sqlite3"
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": str(sqlite_db_path),
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
     }
 }
 
 
-
 # Password validation
-# https://docs.djangoproject.com/en/6.0/topics/auth/passwords/
+# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -124,7 +124,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -3,18 +3,36 @@
         width: min(1100px, 100%);
         margin: 24px auto 0;
         border-radius: 18px;
-        overflow: hidden;
+        overflow: visible;
         box-shadow: 0 15px 45px rgba(15, 18, 61, 0.18);
         background: #f4f7fb;
     }
 
     .app-shell .hero {
+        position: relative;
         padding: 26px 24px 20px;
         text-align: center;
         color: white;
         background: linear-gradient(90deg, #3795e2 0%, #19d1d5 100%);
+        border-radius: 18px 18px 0 0;
     }
 
+    .app-shell .settings-btn {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        border: none;
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+    }
+
+    .app-shell .settings-btn:hover {
+        background: rgba(255, 255, 255, 0.32);
+    }
 
     .app-shell .hero h1 {
         margin-bottom: 6px;
@@ -24,7 +42,7 @@
 
     .app-shell .tabs {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         border-bottom: 1px solid #d4dbe6;
         background-color: #e8edf3;
         position: sticky;
@@ -33,7 +51,16 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
+    .app-shell .tabs.tabs-admin {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .app-shell .tabs.tabs-encargado {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
     .app-shell .tab-link {
+        display: block;
         text-decoration: none;
         color: #202734;
         font-size: 1.1rem;
@@ -55,8 +82,55 @@
         background-color: #eef3f9;
     }
 
+    .app-shell .tab-dropdown .dropdown-toggle {
+        width: 100%;
+        border: none;
+        border-radius: 0;
+        background-color: transparent;
+    }
+
+    .app-shell .tab-dropdown .dropdown-toggle::after {
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .app-shell .tab-dropdown .dropdown-menu {
+        width: min(290px, 95%);
+        margin-top: 10px;
+        border: 1px solid #d9e3f1;
+        border-radius: 14px;
+        box-shadow: 0 12px 24px rgba(18, 35, 74, 0.16);
+        padding: 8px;
+    }
+
+    .app-shell .tab-dropdown .dropdown-menu[data-bs-popper] {
+        top: 100% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+
+    .app-shell .tab-dropdown .dropdown-item {
+        border-radius: 10px;
+        font-weight: 500;
+        padding: 10px 12px;
+        transition: all .18s ease;
+    }
+
+    .app-shell .tab-dropdown .dropdown-item:hover {
+        background: #eaf3ff;
+        color: #145fce;
+    }
+
+    .app-shell .tab-dropdown .dropdown-item.active,
+    .app-shell .tab-dropdown .dropdown-item:active {
+        background: linear-gradient(90deg, #2e87ff, #1f67df);
+        color: #fff;
+    }
+
     @media (max-width: 768px) {
-        .app-shell .tabs {
+        .app-shell .tabs,
+        .app-shell .tabs.tabs-admin,
+        .app-shell .tabs.tabs-encargado {
             grid-template-columns: repeat(2, 1fr);
         }
     }
@@ -64,14 +138,150 @@
 
 <div class="app-shell">
     <header class="hero">
-        <h1>📚 Sistema de Préstamos para Biblioteca</h1>
-        <small class="d-block mt-2">Modo escritorio local (sin inicio de sesión)</small>
+        <button class="settings-btn" type="button" data-bs-toggle="modal" data-bs-target="#modalConfiguracionCuenta" title="Configurar cuenta">
+            ⚙️
+        </button>
+        <h1>📚 Sistema de Prestamos para Biblioteca</h1>
+        <small class="d-block mt-2">Rol: {% if request.user.is_superuser %}Administrador{% else %}Encargado{% endif %}</small>
+        <small class="d-block">Nivel: {% if request.user.is_superuser %}Administración{% else %}{{ request.user.encargado.get_nivel_display|default:"No definido" }}{% endif %}</small>
+        <a href="/logout/" class="btn btn-sm btn-light mt-3">Cerrar sesión</a>
     </header>
 
-    <nav class="tabs">
+    <nav class="tabs {% if request.user.is_superuser %}tabs-admin{% else %}tabs-encargado{% endif %}">
+            {% if request.user.is_superuser %}
+            <a class="tab-link {% if active == 'encargados' %}active{% endif %}" href="/encargados-ui/">🧑‍💼 Encargados</a>
+        {% endif %}
         <a class="tab-link {% if active == 'libros' %}active{% endif %}" href="/libros-ui/">📖 Libros</a>
-        <a class="tab-link {% if active == 'prestamos' %}active{% endif %}" href="/">📋 Préstamos</a>
+        <div class="dropdown tab-dropdown">
+            <button class="tab-link dropdown-toggle {% if active == 'prestamos' or active == 'prestamos_archivados' %}active{% endif %}" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                📋 Préstamos
+            </button>
+            <ul class="dropdown-menu text-center">
+                <li><a class="dropdown-item {% if active == 'prestamos' %}active{% endif %}" href="/?vista=activos">Préstamos activos</a></li>
+                <li><a class="dropdown-item {% if active == 'prestamos_archivados' %}active{% endif %}" href="/?vista=archivados">Préstamos archivados</a></li>
+            </ul>
+        </div>
         <a class="tab-link {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/">👥 Usuarios</a>
     </nav>
 </div>
 
+<div class="modal fade" id="modalConfiguracionCuenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formConfiguracionCuenta">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configurar cuenta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="config_username">Nombre de usuario</label>
+                        <input class="form-control" id="config_username" name="username" type="text" required value="{{ request.user.username }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="config_email">Correo</label>
+                        <input class="form-control" id="config_email" name="email" type="email" value="{{ request.user.email }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="config_password">Contraseña nueva</label>
+                        <input class="form-control" id="config_password" name="password" type="password" placeholder="Dejar en blanco para mantener actual">
+                    </div>
+                    <small class="text-secondary">Si cambias la contraseña, se actualizará tu sesión automáticamente.</small>
+                    <div id="configFeedback" class="small mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalConfirmarPasswordActual" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar cambios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="confirm_current_password">Contraseña actual</label>
+                <input class="form-control" id="confirm_current_password" type="password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password">
+                <div class="small text-secondary mt-2">Para guardar cambios del administrador/encargado debes confirmar con tu contraseña actual.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarGuardarCuenta">Confirmar y guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+
+    const formConfiguracionCuenta = document.getElementById('formConfiguracionCuenta');
+    const configFeedback = document.getElementById('configFeedback');
+    const modalConfirmarPasswordElement = document.getElementById('modalConfirmarPasswordActual');
+    const inputCurrentPassword = document.getElementById('confirm_current_password');
+    const btnConfirmarGuardarCuenta = document.getElementById('btnConfirmarGuardarCuenta');
+
+    async function enviarActualizacionCuenta() {
+        configFeedback.className = 'small mt-2 text-secondary';
+        configFeedback.innerText = 'Guardando...';
+
+        const formData = new FormData(formConfiguracionCuenta);
+        formData.append('current_password', inputCurrentPassword.value);
+
+        const response = await fetch('/mi-cuenta/actualizar/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: formData
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            configFeedback.className = 'small mt-2 text-danger';
+            configFeedback.innerText = data.detail || 'No se pudo actualizar la configuración.';
+            return;
+        }
+
+        configFeedback.className = 'small mt-2 text-success';
+        configFeedback.innerText = data.detail || 'Configuración actualizada.';
+        document.getElementById('config_password').value = '';
+        inputCurrentPassword.value = '';
+        bootstrap.Modal.getInstance(modalConfirmarPasswordElement)?.hide();
+        setTimeout(() => window.location.reload(), 500);
+    }
+
+    formConfiguracionCuenta.addEventListener('submit', (event) => {
+        event.preventDefault();
+        configFeedback.className = 'small mt-2 text-secondary';
+        configFeedback.innerText = 'Confirma con tu contraseña actual para guardar.';
+
+        const modalConfirmarPassword = new bootstrap.Modal(modalConfirmarPasswordElement);
+        inputCurrentPassword.value = '';
+        modalConfirmarPassword.show();
+        setTimeout(() => inputCurrentPassword.focus(), 200);
+    });
+
+    btnConfirmarGuardarCuenta.addEventListener('click', async () => {
+        if (!inputCurrentPassword.value.trim()) {
+            configFeedback.className = 'small mt-2 text-danger';
+            configFeedback.innerText = 'Debes ingresar tu contraseña actual para confirmar.';
+            inputCurrentPassword.focus();
+            return;
+        }
+
+        await enviarActualizacionCuenta();
+    });
+</script>

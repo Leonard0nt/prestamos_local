@@ -42,6 +42,7 @@ thead th {
                             <th>Nombre</th>
                             <th>RUT</th>
                             <th>Correo</th>
+                            <th>Nivel</th>
                             <th>Creado</th>
                             <th>Acciones</th>
                         </tr>
@@ -72,6 +73,10 @@ thead th {
                            onblur="validarRUT(this)">
                     <div id="error_rut_crear" class="text-danger small"></div>
                     <input id="crear_correo" class="form-control mb-2" placeholder="Correo">
+                    <select id="crear_nivel" class="form-select mb-2">
+                        <option value="BASICA">Basica</option>
+                        <option value="MEDIA">Media</option>
+                    </select>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -99,6 +104,10 @@ thead th {
                            onblur="validarRUT(this)">
                     <div id="error_rut_edit" class="text-danger small"></div>
                     <input id="edit_correo" class="form-control mb-2" placeholder="Correo">
+                    <select id="edit_nivel" class="form-select mb-2">
+                        <option value="BASICA">Basica</option>
+                        <option value="MEDIA">Media</option>
+                    </select>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -134,6 +143,10 @@ function formatearRUT(input) {
     }
 
     input.value = valor;
+}
+
+function limpiarRUT(rut = "") {
+    return String(rut).replace(/[.\-]/g, '');
 }
 
 function validarRUT(input) {
@@ -202,7 +215,7 @@ async function cargarEncargados() {
     const res = await fetch(`${API}/encargados/`);
 
     if (!res.ok) {
-        document.getElementById("tablaEncargados").innerHTML = `<tr><td colspan="5">Debes iniciar sesión como administrador para gestionar encargados.</td></tr>`;
+        document.getElementById("tablaEncargados").innerHTML = `<tr><td colspan="6">Debes iniciar sesión como administrador para gestionar encargados.</td></tr>`;
     
         document.getElementById("paginacionEncargados").innerHTML = "";
         encargadosData = [];
@@ -220,7 +233,8 @@ function obtenerEncargadosFiltrados() {
         return (
             encargado.nombre.toLowerCase().includes(filtro) ||
             encargado.rut.toLowerCase().includes(filtro) ||
-            encargado.correo.toLowerCase().includes(filtro)
+            encargado.correo.toLowerCase().includes(filtro) ||
+            (encargado.nivel || "").toLowerCase().includes(filtro)
         );
     });
 }
@@ -235,7 +249,7 @@ function renderizarTablaEncargados() {
 
     tabla.innerHTML = "";
     if (!paginaData.length) {
-        tabla.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Sin resultados.</td></tr>`;
+        tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
 
@@ -246,10 +260,14 @@ function renderizarTablaEncargados() {
                 <td>${e.nombre}</td>
                 <td>${e.rut}</td>
                 <td>${e.correo}</td>
-                <td>${new Date(e.creado_en).toLocaleString()}</td>
+                <td>${e.nivel === "MEDIA" ? "Media" : "Basica"}</td>
+                <td>${new Date(e.creado_en).toLocaleDateString()}</td>
                 <td>
                     <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(e)})'>
                         Editar
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="reestablecerPasswordEncargado(${e.id})">
+                        Reestablecer clave
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="eliminarEncargado(${e.id})">
                         Eliminar
@@ -300,6 +318,7 @@ async function crearEncargado() {
         ),
         rut: document.getElementById("crear_rut").value,
         correo: document.getElementById("crear_correo").value,
+        nivel: document.getElementById("crear_nivel").value,
     };
 
     const response = await fetch(`${API}/encargados/`, {
@@ -320,7 +339,8 @@ async function crearEncargado() {
     }
 
     if (data.password_temporal) {
-        alert(`Encargado creado. Usuario: ${payload.rut} | Contraseña temporal: ${data.password_temporal}`);
+        const usuarioSinFormato = limpiarRUT(payload.rut);
+        alert(`Encargado creado. Usuario: ${usuarioSinFormato} | Contraseña temporal: ${data.password_temporal}`);
     }
 
     bootstrap.Modal.getInstance(document.getElementById('modalCrearEncargado')).hide();
@@ -334,6 +354,7 @@ function abrirEditar(e) {
     document.getElementById("edit_apellidos").value = apellidos;
     document.getElementById("edit_rut").value = e.rut;
     document.getElementById("edit_correo").value = e.correo;
+    document.getElementById("edit_nivel").value = e.nivel || "BASICA";
 
     const modal = new bootstrap.Modal(document.getElementById("modalEditarEncargado"));
     modal.show();
@@ -355,6 +376,7 @@ async function guardarEdicion() {
         ),
         rut: rutInput.value,
         correo: document.getElementById("edit_correo").value,
+        nivel: document.getElementById("edit_nivel").value,
     };
 
     const response = await fetch(`${API}/encargados/${id}/`, {
@@ -395,6 +417,26 @@ async function eliminarEncargado(id) {
     }
 
     cargarEncargados();
+}
+
+async function reestablecerPasswordEncargado(id) {
+    if (!confirm("¿Reestablecer contraseña a los últimos 4 dígitos del RUT?")) return;
+
+    const response = await fetch(`${API}/encargados/${id}/reestablecer_password/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+        },
+        credentials: "same-origin"
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo reestablecer la contraseña");
+        return;
+    }
+
+    alert(`Contraseña reestablecida. Nueva contraseña temporal: ${data.password_temporal}`);
 }
 
 cargarEncargados();

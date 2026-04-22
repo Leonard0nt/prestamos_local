@@ -23,20 +23,22 @@
 
 <body style="background-color: #f1f3f5;">
 
-{% include 'partials/app_menu.html' with active='prestamos' %}
+{% include 'partials/app_menu.html' with active=active_tab %}
 
     <div class="d-flex justify-content-center py-4">
 
         <div class="bg-white p-4 rounded shadow-lg" style="width: 100%; max-width: 1100px;">
 
-            <h2 class="mb-4">📦 Gestión de Préstamos</h2>
+            <h2 class="mb-4">📦 Gestión de Préstamos {% if prestamos_vista == 'archivados' %}Archivados{% endif %}</h2>
 
             <input type="text" id="buscadorPrestamos" class="form-control mb-3" placeholder="🔍 Buscar..."
                 onkeyup="filtrarPrestamos()">
 
-            <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalCrear">
-                ➕ Nuevo Préstamo
-            </button>
+            {% if prestamos_vista != 'archivados' %}
+                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalCrear">
+                    ➕ Nuevo Préstamo
+                </button>
+            {% endif %}
 
 
             <div style="max-height: 400px; overflow-y: auto;">
@@ -45,11 +47,16 @@
                         <tr>
                             <th>Usuario</th>
                             <th>Libro</th>
+                            {% if request.user.is_superuser %}
+                                <th>Nivel</th>
+                            {% endif %}
                             <th>F. Préstamo</th>
                             <th>F. Devolución</th>
                             <th>Estado</th>
                             <th>Días atraso</th>
-                            <th>Acciones</th>
+                            {% if prestamos_vista != 'archivados' %}
+                                <th>Acciones</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody id="tablaPrestamos"></tbody>
@@ -62,6 +69,7 @@
     </div>
 
     <!-- MODAL CREAR -->
+    {% if prestamos_vista != 'archivados' %}
     <div class="modal fade" id="modalCrear">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -78,6 +86,13 @@
                     <select id="crear_ejemplar" class="form-control mb-2">
                         <option value="">Selecciona un ejemplar</option>
                     </select>
+                    {% if request.user.is_superuser %}
+                    <select id="crear_nivel" class="form-control mb-2">
+                        <option value="">Selecciona nivel</option>
+                        <option value="BASICA">Basica</option>
+                        <option value="MEDIA">Media</option>
+                    </select>
+                    {% endif %}
 
                     <label>Fecha devolución</label>
                     <input type="date" id="crear_fecha_dev" class="form-control">
@@ -91,6 +106,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 <!-- MODAL DETALLE -->
 <div class="modal fade" id="modalDetalleUsuario" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -115,11 +131,13 @@
 
     <script>
         const API = window.location.origin;
+        const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
         const modalCrear = document.getElementById("modalCrear");
         const csrfToken = getCookie("csrftoken");
+        const ES_VISTA_ARCHIVADOS = "{{ prestamos_vista }}" === "archivados";
 
         const REGISTROS_POR_PAGINA = 20;
-        const INTERVALO_ACTUALIZACION_MS = 10000;
+        const INTERVALO_ACTUALIZACION_MS = 5000;
         let prestamosData = [];
         let usuariosData = [];
         let prestamosPaginaActual = 1;
@@ -187,7 +205,8 @@ async function cargarEjemplaresLibro() {
         // ================= CARGAR =================
         async function cargarPrestamos(opciones = {}) {
             const { reiniciarPagina = false } = opciones;
-            const res = await fetch(`${API}/prestamos/`);
+            const endpoint = ES_VISTA_ARCHIVADOS ? `${API}/prestamos/historial/` : `${API}/prestamos/`;
+            const res = await fetch(endpoint);
             prestamosData = await res.json();
             if (reiniciarPagina) {
                 prestamosPaginaActual = 1;
@@ -218,7 +237,9 @@ async function cargarEjemplaresLibro() {
 
             tabla.innerHTML = "";
             if (!paginaData.length) {
-                tabla.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Sin resultados.</td></tr>`;
+                const columnasBase = ES_VISTA_ARCHIVADOS ? 6 : 7;
+                const colspan = ES_ADMIN ? columnasBase + 1 : columnasBase;
+                tabla.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted">Sin resultados.</td></tr>`;
             }
 
             paginaData.forEach(p => {
@@ -232,20 +253,23 @@ async function cargarEjemplaresLibro() {
                     </button>
                 </td>
                 <td>${p.ejemplar_detalle}</td>
+                ${ES_ADMIN ? `<td>${p.nivel_pertenencia || "-"}</td>` : ""}
                 <td>${p.fecha_prestamo}</td>
                 <td>${p.fecha_devolucion}</td>
                 <td>${badgeEstado(p.estado)}</td>
                 <td>${p.dias_atraso}</td>
-                <td>
-                    <button class="btn btn-success btn-sm"
-                        onclick="devolver(${p.id})">
-                        Devolver
-                    </button>
-                    <button class="btn btn-danger btn-sm"
-                        onclick="eliminarPrestamo(${p.id})">
-                        Archivar
-                    </button>
-                </td>
+                ${ES_VISTA_ARCHIVADOS ? "" : `
+                    <td class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-success btn-sm"
+                            onclick="devolver(${p.id})">
+                            Devolver
+                        </button>
+                        <button class="btn btn-danger btn-sm"
+                            onclick="eliminarPrestamo(${p.id})">
+                            Archivar
+                        </button>
+                    </td>
+                `}
             </tr>
         `;
             });
@@ -337,18 +361,23 @@ async function cargarSelects() {
             const usuario = document.getElementById("crear_usuario").value;
             const ejemplar = document.getElementById("crear_ejemplar").value;
             const fecha_devolucion = document.getElementById("crear_fecha_dev").value;
-
+            const nivel_asignado = ES_ADMIN ? document.getElementById("crear_nivel").value : null;
+            const payload = { usuario, ejemplar, fecha_devolucion };
+            if (ES_ADMIN) {
+                if (!nivel_asignado) {
+                    alert("Debes seleccionar el nivel (Basica o Media).");
+                    return;
+                }
+                payload.nivel_asignado = nivel_asignado;
+            }
+            
             const response = await fetch(`${API}/prestamos/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": csrfToken
                 },
-                body: JSON.stringify({
-                    usuario,
-                    ejemplar,
-                    fecha_devolucion
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
@@ -395,13 +424,17 @@ async function cargarSelects() {
 
         // ================= INIT =================
         cargarPrestamos({ reiniciarPagina: true });
-        cargarSelects();
+        if (!ES_VISTA_ARCHIVADOS) {
+            cargarSelects();
+        }
         setInterval(() => {
             if (!document.hidden) {
                 cargarPrestamos();
             }
         }, INTERVALO_ACTUALIZACION_MS);
-        modalCrear.addEventListener('shown.bs.modal', precargarFechaDevolucion);
+        if (modalCrear) {
+            modalCrear.addEventListener('shown.bs.modal', precargarFechaDevolucion);
+        }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

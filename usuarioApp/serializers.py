@@ -3,7 +3,38 @@ from rest_framework import serializers
 from .models import EncargadoBiblioteca, usuario
 
 
+def obtener_password_inicial_desde_rut(rut):
+    rut_normalizado = (rut or '').strip()
+    cuerpo_rut = rut_normalizado.split('-')[0]
+    digitos_cuerpo = ''.join(ch for ch in cuerpo_rut if ch.isdigit())
+    return digitos_cuerpo[-4:]
+
+
 class UsuarioSerializer(serializers.ModelSerializer):
+    nivel_pertenencia = serializers.SerializerMethodField()
+
+    def get_nivel_pertenencia(self, obj):
+        if obj.nivel_asignado == usuario.NIVEL_MEDIA:
+            return 'Media'
+        if obj.nivel_asignado == usuario.NIVEL_BASICA:
+            return 'Basica'
+
+        encargado = getattr(obj, 'encargado_agrego', None)
+        return encargado.get_nivel_display() if encargado else ''
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if (
+            request
+            and request.user.is_superuser
+            and self.instance is None
+            and not attrs.get('nivel_asignado')
+        ):
+            raise serializers.ValidationError(
+                {'nivel_asignado': 'Debes seleccionar un nivel (Basica o Media).'}
+            )
+        return attrs
+
     class Meta:
         model = usuario
         fields = '__all__'
@@ -14,7 +45,7 @@ class EncargadoBibliotecaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EncargadoBiblioteca
-        fields = ['id', 'nombre', 'rut', 'correo', 'creado_en', 'password_temporal']
+        fields = ['id', 'nombre', 'rut', 'correo', 'nivel', 'creado_en', 'password_temporal']
         read_only_fields = ['id', 'creado_en', 'password_temporal']
 
     def create(self, validated_data):
@@ -29,9 +60,7 @@ class EncargadoBibliotecaSerializer(serializers.ModelSerializer):
             username = f"{base_username}{idx}"
             idx += 1
 
-        rut_limpio = ''.join(ch for ch in rut if ch.isalnum()).lower()
-        cuerpo_rut = rut_limpio[:-1] if len(rut_limpio) > 1 else rut_limpio
-        password_temporal = cuerpo_rut[-4:] if len(cuerpo_rut) >= 4 else cuerpo_rut
+        password_temporal = obtener_password_inicial_desde_rut(rut)
 
         user = User.objects.create_user(
             username=username,

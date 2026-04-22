@@ -22,6 +22,41 @@ thead th {
 thead, tbody, tr, td, th {
     border-color: #dee2e6 !important;
 }
+
+.estado-select {
+    font-weight: 600;
+    border-width: 2px;
+}
+
+.estado-disponible {
+    background-color: #d1fae5 !important;
+    border-color: #198754 !important;
+    color: #0f5132 !important;
+}
+
+.estado-extraviado {
+    background-color: #ffe5d0 !important;
+    border-color: #fd7e14 !important;
+    color: #7a3e00 !important;
+}
+
+.estado-danado {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #842029 !important;
+}
+
+.btn-accion-libro {
+    min-height: 38px;
+    font-size: 0.85rem;
+    line-height: 1.1;
+    padding: 0.375rem 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+}
 </style>
 <body style="background-color: #f1f3f5;">
 
@@ -45,6 +80,9 @@ thead, tbody, tr, td, th {
             <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
                 <tr>
                     <th>Título</th>
+                    {% if request.user.is_superuser %}
+                    <th>Nivel</th>
+                    {% endif %}
                     <th>Autor</th>
                     <th>Editorial</th>
                     <th>Fecha registro</th>
@@ -78,6 +116,13 @@ thead, tbody, tr, td, th {
         <input id="crear_fecha" type="date" class="form-control mb-2">
         <input id="crear_codigo" class="form-control mb-2" placeholder="Código del libro">
         <input id="crear_cantidad" type="number" class="form-control mb-2" placeholder="Cantidad de ejemplares">
+        {% if request.user.is_superuser %}
+        <select id="crear_nivel" class="form-control mb-2">
+            <option value="">Selecciona nivel</option>
+            <option value="BASICA">Basica</option>
+            <option value="MEDIA">Media</option>
+        </select>
+        {% endif %}
 
       </div>
       <div class="modal-footer">
@@ -129,7 +174,6 @@ thead, tbody, tr, td, th {
                     <th>Código</th>
                     <th>Fecha registro</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaEjemplares"></tbody>
@@ -179,8 +223,33 @@ thead, tbody, tr, td, th {
     </div>
   </div>
 </div>
+
+<!-- MODAL DAR DE BAJA LIBRO -->
+<div class="modal fade" id="modalDarBajaLibro">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Dar de baja ejemplares del libro</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2" id="textoDarBajaLibro"></p>
+        <label for="estadoDarBajaLibro" class="form-label">Selecciona el estado</label>
+        <select id="estadoDarBajaLibro" class="form-select">
+            <option value="extraviado">Extraviado</option>
+            <option value="danado">Dañado</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarDarBajaLibro()">Aplicar</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 const API = window.location.origin;
+const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
 const REGISTROS_POR_PAGINA = 20;
 const REFRESH_INTERVAL_MS = 10000;
 let librosData = [];
@@ -189,6 +258,7 @@ let librosAutoRefreshId = null;
 
 let libroActual = null;
 let tituloActual = "";
+let libroDarBajaId = null;
 
 function getCookie(name) {
     const cookies = document.cookie ? document.cookie.split(';') : [];
@@ -204,6 +274,12 @@ function getCookie(name) {
 function getCsrfHeaders() {
     const csrftoken = getCookie('csrftoken');
     return csrftoken ? {"X-CSRFToken": csrftoken} : {};
+}
+
+function escapeTextoJs(texto) {
+    return (texto || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
 }
 
 // ================= CARGAR =================
@@ -233,7 +309,8 @@ function obtenerLibrosFiltrados() {
             libro.titulo.toLowerCase().includes(filtro) ||
             libro.autor.toLowerCase().includes(filtro) ||
             libro.editorial.toLowerCase().includes(filtro) ||
-            libro.codigo_libro.toLowerCase().includes(filtro)
+            libro.codigo_libro.toLowerCase().includes(filtro) ||
+            (libro.nivel_pertenencia || "").toLowerCase().includes(filtro)
         );
     });
 }
@@ -248,30 +325,34 @@ function renderizarTablaLibros() {
 
     tabla.innerHTML = "";
     if (!paginaData.length) {
-        tabla.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Sin resultados.</td></tr>`;
+        const columnas = ES_ADMIN ? 8 : 7;
+        tabla.innerHTML = `<tr><td colspan="${columnas}" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
     paginaData.forEach(l => {
         tabla.innerHTML += `
             <tr>
                 <td>${l.titulo}</td>
+                ${ES_ADMIN ? `<td>${l.nivel_pertenencia || "-"}</td>` : ""}
                 <td>${l.autor}</td>
                 <td>${l.editorial}</td>
                 <td>${l.fecha_registro}</td>
                 <td>${l.codigo_libro}</td>
                 <td>
-                    <button class="btn btn-outline-primary btn-sm"
+                    <button class="btn btn-outline-primary btn-sm btn-accion-libro"
                         onclick="verEjemplares(${l.id}, '${l.titulo}', '${l.codigo_libro}')">
                         Ver (${l.cantidad_disponibles}/${l.cantidad_ejemplares})
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(l)})'>
-                        Editar
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="eliminarLibro(${l.id})">
-                        Eliminar
-                    </button>
+                    <div class="d-flex flex-nowrap gap-2 align-items-center">
+                        <button class="btn btn-warning btn-sm btn-accion-libro" onclick='abrirEditar(${JSON.stringify(l)})'>
+                            Editar
+                        </button>
+                        <button class="btn btn-danger btn-sm btn-accion-libro" onclick="abrirDarBajaLibro(${l.id}, '${escapeTextoJs(l.titulo)}')">
+                            Dar de baja
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -311,21 +392,39 @@ async function cargarEjemplares(libro_id) {
             <tr>
                 <td>${e.codigo}</td>
                 <td>${e.fecha_llegada || '-'}</td>
-                <td>
-                    ${e.estado === 'disponible'
-                        ? '<span class="badge bg-success">Disponible</span>'
-                        : '<span class="badge bg-danger">' + e.estado + '</span>'
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-danger btn-sm"
-                        onclick="eliminarEjemplar(${e.id})">
-                        🗑
-                    </button>
+                <td class="d-flex flex-wrap gap-2 align-items-center">
+                    <select class="form-select form-select-sm w-auto estado-select"
+                        onchange="onCambioEstadoEjemplar(this, ${e.id}, '${e.estado}')">
+                        ${renderEstadoOpciones(e.estado)}
+                    </select>
                 </td>
             </tr>
         `;
     });
+
+    tabla.querySelectorAll("select.estado-select").forEach((selectElement) => {
+        aplicarColorEstadoSelect(selectElement, selectElement.value);
+    });
+}
+
+function renderEstadoOpciones(estadoActual) {
+    const opciones = [
+        { valor: "disponible", etiqueta: "Disponible" },
+        { valor: "extraviado", etiqueta: "Extraviado" },
+        { valor: "danado", etiqueta: "Dañado" }
+    ];
+
+    return opciones.map((opcion) => `
+        <option value="${opcion.valor}" ${opcion.valor === estadoActual ? "selected" : ""}>
+            ${opcion.etiqueta}
+        </option>
+    `).join("");
+}
+
+function aplicarColorEstadoSelect(selectElement, estado) {
+    const clasesEstado = ["estado-disponible", "estado-extraviado", "estado-danado"];
+    selectElement.classList.remove(...clasesEstado);
+    selectElement.classList.add(`estado-${estado}`);
 }
 //Filtrar libros
 function filtrarLibros() {
@@ -340,6 +439,7 @@ async function crearLibro() {
     const fecha_registro = document.getElementById("crear_fecha").value;
     const codigo_libro = document.getElementById("crear_codigo").value.trim();
     const cantidadRaw = document.getElementById("crear_cantidad").value;
+    const nivel_asignado = ES_ADMIN ? document.getElementById("crear_nivel").value : null;
 
     if (!titulo || !autor || !editorial || !fecha_registro || !codigo_libro) {
         alert("Completa todos los campos obligatorios para crear el libro.");
@@ -347,7 +447,14 @@ async function crearLibro() {
     }
 
     const payload = { titulo, autor, editorial, fecha_registro, codigo_libro };
-
+    if (ES_ADMIN) {
+        if (!nivel_asignado) {
+            alert("Debes seleccionar el nivel (Basica o Media).");
+            return;
+        }
+        payload.nivel_asignado = nivel_asignado;
+    }
+    
     if (cantidadRaw !== "") {
         const cantidad = parseInt(cantidadRaw, 10);
         if (Number.isNaN(cantidad) || cantidad <= 0) {
@@ -376,29 +483,97 @@ async function crearLibro() {
 
 // ================= ELIMINAR =================
 async function eliminarLibro(id) {
-    if (!confirm("¿Eliminar libro?")) return;
+    if (!confirm("¿Eliminar libro? Solo se permite si no tiene ejemplares asociados.")) return;
 
-    await fetch(`${API}/libros/${id}/`, {
+    const response = await fetch(`${API}/libros/${id}/`, {
         method: "DELETE",
         credentials: "same-origin",
         headers: getCsrfHeaders()
     });
 
-    cargarLibros({resetPagina: true});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo eliminar el libro.");
+        return;
+    }
+
 }
 // Eliminar ejemplar
-async function eliminarEjemplar(id) {
-    if (!confirm("¿Eliminar ejemplar?")) return;
+async function darBajaEjemplar(id) {
+    if (!confirm("¿Dar de baja ejemplar? Se conservará su historial.")) return;
 
-    await fetch(`${API}/ejemplares/${id}/`, {
+    const response = await fetch(`${API}/ejemplares/${id}/`, {
         method: "DELETE",
         credentials: "same-origin",
         headers: getCsrfHeaders()
     });
 
     // recargar lista
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo dar de baja el ejemplar.");
+        return;
+    }
+
+    alert(data.detail || "Ejemplar dado de baja correctamente.");
     cargarEjemplares(libroActual); 
     cargarLibros();
+}
+
+async function actualizarEstadoEjemplar(id, estado) {
+    const etiquetas = {
+        disponible: "disponible",
+        extraviado: "extraviado",
+        danado: "dañado"
+    };
+    const etiqueta = etiquetas[estado] || estado;
+
+    const response = await fetch(`${API}/ejemplares/${id}/`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json", ...getCsrfHeaders()},
+        body: JSON.stringify({ estado })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo actualizar el estado del ejemplar.");
+        return false;
+    }
+
+    alert(`Estado actualizado a ${etiqueta}.`);
+    cargarEjemplares(libroActual);
+    cargarLibros();
+    return true;
+}
+
+async function onCambioEstadoEjemplar(selectElement, id, estadoAnterior) {
+    const nuevoEstado = selectElement.value;
+    if (nuevoEstado === estadoAnterior) return;
+
+    aplicarColorEstadoSelect(selectElement, nuevoEstado);
+
+    const confirmado = confirm(`¿Cambiar estado del ejemplar a ${selectElement.options[selectElement.selectedIndex].text.toLowerCase()}?`);
+    if (!confirmado) {
+        selectElement.value = estadoAnterior;
+        aplicarColorEstadoSelect(selectElement, estadoAnterior);
+        return;
+    }
+
+    const actualizado = await actualizarEstadoEjemplar(id, nuevoEstado);
+    if (!actualizado) {
+        selectElement.value = estadoAnterior;
+        aplicarColorEstadoSelect(selectElement, estadoAnterior);
+    }
+}
+
+function badgeEstadoEjemplar(estado) {
+    if (estado === 'disponible') return '<span class="badge bg-success">Disponible</span>';
+    if (estado === 'prestado') return '<span class="badge bg-warning text-dark">Prestado</span>';
+    if (estado === 'baja') return '<span class="badge bg-secondary">Baja</span>';
+    if (estado === 'extraviado') return '<span class="badge bg-dark">Extraviado</span>';
+    if (estado === 'danado') return '<span class="badge bg-danger">Dañado</span>';
+    return '<span class="badge bg-danger">' + estado + '</span>';
 }
 
 // ================= EDITAR =================
@@ -483,6 +658,51 @@ async function confirmarAgregarEjemplares() {
 
     // recargar tabla
     cargarEjemplares(libroActual);
+    cargarLibros();
+}
+
+function abrirDarBajaLibro(libroId, tituloLibro) {
+    libroDarBajaId = libroId;
+    document.getElementById("estadoDarBajaLibro").value = "extraviado";
+    document.getElementById("textoDarBajaLibro").innerText =
+        `Selecciona el estado que se aplicará a todos los ejemplares del libro "${tituloLibro}".`;
+
+    const modal = new bootstrap.Modal(document.getElementById("modalDarBajaLibro"));
+    modal.show();
+}
+
+async function confirmarDarBajaLibro() {
+    if (!libroDarBajaId) return;
+
+    const estado = document.getElementById("estadoDarBajaLibro").value;
+    const etiquetaEstado = estado === "danado" ? "dañado" : "extraviado";
+
+    const confirmado = confirm(
+        `¿Aplicar estado "${etiquetaEstado}" a todos los ejemplares de este libro?`
+    );
+    if (!confirmado) return;
+
+    const response = await fetch(`${API}/libros/${libroDarBajaId}/actualizar_estado_ejemplares/`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json", ...getCsrfHeaders()},
+        body: JSON.stringify({ estado })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo actualizar el estado de los ejemplares.");
+        return;
+    }
+
+    alert(data.detail || "Estados actualizados correctamente.");
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById("modalDarBajaLibro"));
+    modal?.hide();
+
+    if (libroActual === libroDarBajaId) {
+        cargarEjemplares(libroActual);
+    }
     cargarLibros();
 }
 
