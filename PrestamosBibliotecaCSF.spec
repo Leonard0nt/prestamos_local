@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets\\prestamos_csf.ico'],
+    icon=['assets\\prestamos_csfv2.ico'],
 )

@@ -8,7 +8,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Prestamos Biblioteca"
 #define MyAppExeName "PrestamosBibliotecaCSF.exe"
-#define MyAppIcon "assets\prestamos_csf.ico"
+#define MyAppIcon "assets\prestamos_csfv2.ico"
 #define MyAppId "{{8C2D95E7-90B2-4E29-86D4-C387C308C4A7}"
 
 #ifnexist ".env"
@@ -56,9 +56,7 @@ Source: "prestamoApp\*"; DestDir: "{app}\prestamoApp"; Flags: ignoreversion recu
 Source: "usuarioApp\*"; DestDir: "{app}\usuarioApp"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Templates y estáticos
-#ifexist "templates\*"
 Source: "templates\*"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs
-#endif
 
 #ifexist "static\*"
 Source: "static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
