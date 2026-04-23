@@ -56,8 +56,17 @@ Source: "prestamoApp\*"; DestDir: "{app}\prestamoApp"; Flags: ignoreversion recu
 Source: "usuarioApp\*"; DestDir: "{app}\usuarioApp"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Templates y estáticos
+#ifexist "templates\*"
 Source: "templates\*"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
+#ifexist "static\*"
 Source: "static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
+[Dirs]
+Name: "{app}\templates"
+Name: "{app}\static"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\prestamos_csf.ico"

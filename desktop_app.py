@@ -19,6 +19,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -102,6 +103,21 @@ def _wait_for_port(host: str, port: int, timeout_seconds: int) -> bool:
     return False
 
 
+def _load_env_file(env_file: Path) -> None:
+    if not env_file.exists():
+        return
+
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def _terminate_process(process: subprocess.Popen[bytes] | subprocess.Popen[str]) -> None:
     if process.poll() is not None:
         return
@@ -119,6 +135,32 @@ def _terminate_process(process: subprocess.Popen[bytes] | subprocess.Popen[str])
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
+
+
+def _start_embedded_django_server(root: Path):
+    """
+    Inicia Django dentro del mismo proceso (sin depender de Python del sistema).
+    Ideal para ejecutables PyInstaller en PCs donde no hay Python instalado.
+    """
+    _load_env_file(root / ".env")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "prestamos_biblioteca.settings")
+
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+
+    try:
+        import django
+        from django.core.wsgi import get_wsgi_application
+        from wsgiref.simple_server import make_server
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo importar Django embebido: {exc}") from exc
+
+    django.setup()
+    application = get_wsgi_application()
+    httpd = make_server(HOST, PORT, application)
+    server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    server_thread.start()
+    return httpd
 
 
 def _show_error(message: str, title: str = "Desktop App Error") -> None:
@@ -156,27 +198,46 @@ def main() -> int:
     manage_py = root / "manage.py"
     _write_log(f"Raíz detectada: {root}")
 
-    runserver_cmd = [
-        _python_executable(),
-        str(manage_py),
-        "runserver",
-        f"{HOST}:{PORT}",
-    ]
+    process = None
+    httpd = None
 
-    process = subprocess.Popen(
-        runserver_cmd,
-        cwd=str(root),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    if _is_frozen():
+        try:
+            httpd = _start_embedded_django_server(root)
+        except Exception as exc:
+            error_message = (
+                "No fue posible iniciar Django embebido.\n\n"
+                "Revisa desktop_app.log para más detalles."
+            )
+            _write_log(error_message)
+            _write_log(str(exc))
+            _show_error(error_message)
+            return 1
+    else:
+        runserver_cmd = [
+            _python_executable(),
+            str(manage_py),
+            "runserver",
+            f"{HOST}:{PORT}",
+        ]
 
-    atexit.register(_terminate_process, process)
+        process = subprocess.Popen(
+            runserver_cmd,
+            cwd=str(root),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        atexit.register(_terminate_process, process)
 
     if not _wait_for_port(HOST, PORT, START_TIMEOUT_SECONDS):
-        _terminate_process(process)
+        if process is not None:
+            _terminate_process(process)
+        if httpd is not None:
+            httpd.server_close()
+
         stderr_output = ""
-        if process.stderr is not None:
+        if process is not None and process.stderr is not None:
             try:
                 stderr_output = process.stderr.read()
             except Exception:
@@ -200,7 +261,11 @@ def main() -> int:
     try:
         webview.start()
     finally:
-        _terminate_process(process)
+        if process is not None:
+            _terminate_process(process)
+        if httpd is not None:
+            httpd.shutdown()
+            httpd.server_close()
 
     return 0
 
