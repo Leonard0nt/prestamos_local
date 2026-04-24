@@ -30,8 +30,8 @@ PORT = 8000
 START_PATH = "/login/"
 WINDOW_TITLE = "PrestamosBibliotecaCSF"
 START_TIMEOUT_SECONDS = 25
-WINDOW_WIDTH = 1365
-WINDOW_HEIGHT = 768
+WINDOW_WIDTH = 1165
+WINDOW_HEIGHT = 668
 
 def _is_frozen() -> bool:
     return bool(getattr(sys, "frozen", False))

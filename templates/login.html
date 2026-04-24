@@ -44,6 +44,62 @@
             togglePasswordBtn.innerText = isHidden ? 'Ocultar' : 'Mostrar';
         });
     </script>
+
+    <script>
+        (function configurarRecuperacionEnLogin() {
+            if (window.__loginRecoveryReady) return;
+            window.__loginRecoveryReady = true;
+
+            let overlay = null;
+
+            function crearOverlay() {
+                if (overlay) return overlay;
+                overlay = document.createElement('div');
+                overlay.style.cssText = [
+                    'position:fixed',
+                    'inset:0',
+                    'background:rgba(15,23,42,0.88)',
+                    'color:#fff',
+                    'display:none',
+                    'align-items:center',
+                    'justify-content:center',
+                    'z-index:3000',
+                    'padding:16px'
+                ].join(';');
+                overlay.innerHTML = `
+                    <div style="max-width:520px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center;">
+                        <h4 style="margin:0 0 8px 0;">📡 Sin conexión</h4>
+                        <p style="margin:0 0 12px 0;">Cuando vuelva internet, puedes recargar desde aquí.</p>
+                        <button id="btnReintentarLogin" type="button" class="btn btn-light btn-sm">Reintentar ahora</button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.querySelector('#btnReintentarLogin')?.addEventListener('click', () => window.location.reload());
+                return overlay;
+            }
+
+            function mostrarOverlay() {
+                crearOverlay().style.display = 'flex';
+            }
+
+            function crearBotonRecarga() {
+                if (document.getElementById('btnRecargaRapidaLogin')) return;
+                const boton = document.createElement('button');
+                boton.id = 'btnRecargaRapidaLogin';
+                boton.type = 'button';
+                boton.className = 'btn btn-primary btn-sm';
+                boton.textContent = '↻ Recargar';
+                boton.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2500;box-shadow:0 6px 16px rgba(0,0,0,.25);';
+                boton.addEventListener('click', () => window.location.reload());
+                document.body.appendChild(boton);
+            }
+
+            window.addEventListener('offline', mostrarOverlay);
+            window.addEventListener('online', () => window.location.reload());
+
+            crearBotonRecarga();
+        })();
+    </script>
 </body>
 
 </html>

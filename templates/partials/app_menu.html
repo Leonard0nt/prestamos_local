@@ -209,6 +209,16 @@
                 <label class="form-label" for="confirm_current_password">Contraseña actual</label>
                 <input class="form-control" id="confirm_current_password" type="password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password">
                 <div class="small text-secondary mt-2">Para guardar cambios del administrador/encargado debes confirmar con tu contraseña actual.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarGuardarCuenta">Confirmar y guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
     (function configurarRecuperacionConexion() {
         if (window.__conexionRecuperacionConfigurada) return;
         window.__conexionRecuperacionConfigurada = true;
@@ -247,6 +257,25 @@
             return overlay;
         }
 
+        function crearBotonRecargaRapida() {
+            if (document.getElementById('btnRecargaRapida')) return;
+            const boton = document.createElement('button');
+            boton.id = 'btnRecargaRapida';
+            boton.type = 'button';
+            boton.className = 'btn btn-primary btn-sm';
+            boton.textContent = '↻ Recargar';
+            boton.title = 'Recargar aplicación';
+            boton.style.cssText = [
+                'position:fixed',
+                'right:16px',
+                'bottom:16px',
+                'z-index:2500',
+                'box-shadow:0 6px 16px rgba(0,0,0,.25)'
+            ].join(';');
+            boton.addEventListener('click', () => window.location.reload());
+            document.body.appendChild(boton);
+        }
+
         function mostrarOverlay(mensaje) {
             const panel = crearOverlay();
             const estado = panel.querySelector('#estadoConexionRecuperacion');
@@ -277,12 +306,32 @@
         window.__fetchOriginal = window.fetch.bind(window);
         window.fetch = async (...args) => {
             try {
-                return await window.__fetchOriginal(...args);
+                const respuesta = await window.__fetchOriginal(...args);
+                if (respuesta.status >= 500) {
+                    mostrarOverlay('El servidor devolvió error 500. Usa "Reintentar ahora" cuando vuelva.');
+                }
+                return respuesta;
             } catch (error) {
                 mostrarOverlay('Sin conexión al servidor. Esperando reconexión...');
                 throw error;
             }
         };
+
+        window.addEventListener('error', (event) => {
+            const mensaje = String(event?.message || '');
+            if (mensaje.includes('Failed to fetch') || mensaje.includes('Unexpected token')) {
+                mostrarOverlay('Se perdió la comunicación con el servidor. Reintenta recargando.');
+                event.preventDefault();
+            }
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const motivo = String(event?.reason?.message || event?.reason || '');
+            if (motivo.includes('Failed to fetch') || motivo.includes('Unexpected token')) {
+                mostrarOverlay('Error de conexión detectado. La app puede recuperarse recargando.');
+                event.preventDefault();
+            }
+        });
 
         window.addEventListener('offline', () => {
             mostrarOverlay('Sin internet. Reintentando cuando vuelva la conexión...');
@@ -306,19 +355,10 @@
             }
         }, 5000);
 
+        crearBotonRecargaRapida();
         ocultarOverlay();
     })();
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmarGuardarCuenta">Confirmar y guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
     function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
