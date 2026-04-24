@@ -152,16 +152,44 @@ def _start_embedded_django_server(root: Path):
     try:
         import django
         from django.core.wsgi import get_wsgi_application
-        from wsgiref.simple_server import make_server
     except Exception as exc:
         raise RuntimeError(f"No se pudo importar Django embebido: {exc}") from exc
 
     django.setup()
     application = get_wsgi_application()
-    httpd = make_server(HOST, PORT, application)
-    server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    server_thread.start()
-    return httpd
+
+    try:
+        from waitress.server import create_server
+
+        waitress_server = create_server(application, host=HOST, port=PORT, threads=8)
+        server_thread = threading.Thread(target=waitress_server.run, daemon=True)
+        server_thread.start()
+        _write_log("Servidor embebido iniciado con Waitress.")
+        return {"type": "waitress", "server": waitress_server}
+    except Exception as exc:
+        _write_log(f"No se pudo iniciar Waitress, se usará wsgiref. Detalle: {exc}")
+        from wsgiref.simple_server import make_server
+
+        httpd = make_server(HOST, PORT, application)
+        server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        server_thread.start()
+        _write_log("Servidor embebido iniciado con wsgiref (fallback).")
+        return {"type": "wsgiref", "server": httpd}
+
+
+def _stop_embedded_django_server(server_handle) -> None:
+    if not server_handle:
+        return
+
+    server_type = server_handle.get("type")
+    server = server_handle.get("server")
+
+    if server_type == "waitress":
+        server.close()
+        return
+
+    server.shutdown()
+    server.server_close()
 
 
 def _show_error(message: str, title: str = "Desktop App Error") -> None:
@@ -200,11 +228,11 @@ def main() -> int:
     _write_log(f"Raíz detectada: {root}")
 
     process = None
-    httpd = None
+    embedded_server = None
 
     if _is_frozen():
         try:
-            httpd = _start_embedded_django_server(root)
+            embedded_server = _start_embedded_django_server(root)
         except Exception as exc:
             error_message = (
                 "No fue posible iniciar Django embebido.\n\n"
@@ -234,8 +262,8 @@ def main() -> int:
     if not _wait_for_port(HOST, PORT, START_TIMEOUT_SECONDS):
         if process is not None:
             _terminate_process(process)
-        if httpd is not None:
-            httpd.server_close()
+        if embedded_server is not None:
+            _stop_embedded_django_server(embedded_server)
 
         stderr_output = ""
         if process is not None and process.stderr is not None:
@@ -266,10 +294,8 @@ def main() -> int:
     finally:
         if process is not None:
             _terminate_process(process)
-        if httpd is not None:
-            httpd.shutdown()
-            httpd.server_close()
-
+        if embedded_server is not None:
+            _stop_embedded_django_server(embedded_server)
     return 0
 
 
