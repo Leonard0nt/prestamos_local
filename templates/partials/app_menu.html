@@ -209,6 +209,106 @@
                 <label class="form-label" for="confirm_current_password">Contraseña actual</label>
                 <input class="form-control" id="confirm_current_password" type="password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password">
                 <div class="small text-secondary mt-2">Para guardar cambios del administrador/encargado debes confirmar con tu contraseña actual.</div>
+    (function configurarRecuperacionConexion() {
+        if (window.__conexionRecuperacionConfigurada) return;
+        window.__conexionRecuperacionConfigurada = true;
+
+        let overlay = null;
+
+        function crearOverlay() {
+            if (overlay) return overlay;
+
+            overlay = document.createElement('div');
+            overlay.id = 'offlineRecoveryOverlay';
+            overlay.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'background:rgba(15,23,42,0.88)',
+                'color:#fff',
+                'display:none',
+                'align-items:center',
+                'justify-content:center',
+                'z-index:3000',
+                'padding:16px'
+            ].join(';');
+
+            overlay.innerHTML = `
+                <div style="max-width:560px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.4);">
+                    <h4 style="margin:0 0 12px 0;">📡 Conexión perdida</h4>
+                    <p style="margin:0 0 14px 0;">La app no pudo comunicarse con el servidor. Cuando vuelva la conexión, se recargará automáticamente.</p>
+                    <button id="btnReintentarConexion" type="button" class="btn btn-light btn-sm">Reintentar ahora</button>
+                    <div id="estadoConexionRecuperacion" style="font-size:.85rem;color:#cbd5e1;margin-top:10px;"></div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+            const btnReintentar = overlay.querySelector('#btnReintentarConexion');
+            btnReintentar?.addEventListener('click', () => window.location.reload());
+            return overlay;
+        }
+
+        function mostrarOverlay(mensaje) {
+            const panel = crearOverlay();
+            const estado = panel.querySelector('#estadoConexionRecuperacion');
+            if (estado) {
+                estado.textContent = mensaje || 'Sin conexión al servidor.';
+            }
+            panel.style.display = 'flex';
+        }
+
+        function ocultarOverlay() {
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        async function verificarServidor() {
+            try {
+                const respuesta = await window.__fetchOriginal(`${window.location.origin}/login/`, {
+                    method: 'HEAD',
+                    cache: 'no-store'
+                });
+                return respuesta.ok;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        window.__fetchOriginal = window.fetch.bind(window);
+        window.fetch = async (...args) => {
+            try {
+                return await window.__fetchOriginal(...args);
+            } catch (error) {
+                mostrarOverlay('Sin conexión al servidor. Esperando reconexión...');
+                throw error;
+            }
+        };
+
+        window.addEventListener('offline', () => {
+            mostrarOverlay('Sin internet. Reintentando cuando vuelva la conexión...');
+        });
+
+        window.addEventListener('online', async () => {
+            mostrarOverlay('Internet detectado. Verificando servidor...');
+            const servidorDisponible = await verificarServidor();
+            if (servidorDisponible) {
+                window.location.reload();
+                return;
+            }
+            mostrarOverlay('Internet volvió, pero el servidor aún no responde. Intenta nuevamente.');
+        });
+
+        setInterval(async () => {
+            if (!overlay || overlay.style.display !== 'flex') return;
+            const servidorDisponible = await verificarServidor();
+            if (servidorDisponible) {
+                window.location.reload();
+            }
+        }, 5000);
+
+        ocultarOverlay();
+    })();
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

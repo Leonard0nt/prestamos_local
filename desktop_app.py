@@ -30,7 +30,8 @@ PORT = 8000
 START_PATH = "/login/"
 WINDOW_TITLE = "PrestamosBibliotecaCSF"
 START_TIMEOUT_SECONDS = 25
-
+WINDOW_WIDTH = 1365
+WINDOW_HEIGHT = 768
 
 def _is_frozen() -> bool:
     return bool(getattr(sys, "frozen", False))
@@ -255,7 +256,9 @@ def main() -> int:
     webview.create_window(
         title=WINDOW_TITLE,
         url=f"http://{HOST}:{PORT}{START_PATH}",
-        min_size=(900, 650),
+        width=WINDOW_WIDTH,
+        height=WINDOW_HEIGHT,
+        min_size=(WINDOW_WIDTH, WINDOW_HEIGHT),
     )
 
     try:
