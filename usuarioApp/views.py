@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.db import DatabaseError
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -27,7 +28,15 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        user = authenticate(request, username=username, password=password)
+        try:
+            user = authenticate(request, username=username, password=password)
+        except DatabaseError:
+            messages.error(
+                request,
+                'No fue posible validar tus credenciales porque el servidor no está disponible. '
+                'Por favor, recarga e inténtalo nuevamente en unos segundos.',
+            )
+            return render(request, 'login.html', status=503)
 
         if user is None:
             messages.error(request, 'Usuario o contraseña incorrectos.')
