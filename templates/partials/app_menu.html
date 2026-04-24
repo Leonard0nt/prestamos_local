@@ -246,14 +246,11 @@
                 <div style="max-width:560px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.4);">
                     <h4 style="margin:0 0 12px 0;">📡 Conexión perdida</h4>
                     <p style="margin:0 0 14px 0;">La app no pudo comunicarse con el servidor. Cuando vuelva la conexión, se recargará automáticamente.</p>
-                    <button id="btnReintentarConexion" type="button" class="btn btn-light btn-sm">Reintentar ahora</button>
                     <div id="estadoConexionRecuperacion" style="font-size:.85rem;color:#cbd5e1;margin-top:10px;"></div>
                 </div>
             `;
 
             document.body.appendChild(overlay);
-            const btnReintentar = overlay.querySelector('#btnReintentarConexion');
-            btnReintentar?.addEventListener('click', () => window.location.reload());
             return overlay;
         }
 

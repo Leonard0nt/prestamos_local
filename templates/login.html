@@ -69,12 +69,10 @@
                 overlay.innerHTML = `
                     <div style="max-width:520px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center;">
                         <h4 style="margin:0 0 8px 0;">📡 Sin conexión</h4>
-                        <p style="margin:0 0 12px 0;">Cuando vuelva internet, puedes recargar desde aquí.</p>
-                        <button id="btnReintentarLogin" type="button" class="btn btn-light btn-sm">Reintentar ahora</button>
+                        <p style="margin:0 0 12px 0;">Cuando vuelva internet, la pagina se recargara.</p>
                     </div>
                 `;
                 document.body.appendChild(overlay);
-                overlay.querySelector('#btnReintentarLogin')?.addEventListener('click', () => window.location.reload());
                 return overlay;
             }
 
