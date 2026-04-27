@@ -422,17 +422,38 @@ async function eliminarEncargado(id) {
 async function reestablecerCuentaEncargado(id) {
     if (!confirm("¿Reestablecer cuenta al valor inicial (usuario desde RUT y clave temporal)?")) return;
 
-    const response = await fetch(`${API}/encargados/${id}/reestablecer_password/`, {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken")
-        },
-        credentials: "same-origin"
-    });
+    const endpoints = [
+        `${API}/encargados/${id}/reestablecer_password/`,
+        `${API}/encargados/${id}/restablecer_password/`
+    ];
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        alert(data.detail || "No se pudo reestablecer la cuenta");
+    let data = {};
+    let ultimoError = null;
+    for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            credentials: "same-origin"
+        });
+
+        data = await response.json().catch(() => ({}));
+        if (response.ok) {
+            ultimoError = null;
+            break;
+        }
+
+        if (response.status !== 404) {
+            ultimoError = data.detail || "No se pudo reestablecer la cuenta";
+            break;
+        }
+
+        ultimoError = data.detail || "No se pudo reestablecer la cuenta";
+    }
+
+    if (ultimoError) {
+        alert(ultimoError);
         return;
     }
 

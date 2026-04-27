@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -175,16 +176,7 @@ class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'])
-    def reestablecer_password(self, request, pk=None):
-        encargado = self.get_object()
-        user = encargado.user
-
-        if not user:
-            return Response(
-                {'detail': 'El encargado no tiene un usuario asociado.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    def _reestablecer_cuenta(self, encargado):
 
         password_temporal = obtener_password_inicial_desde_rut(encargado.rut)
         if not password_temporal:
@@ -193,10 +185,29 @@ class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        username_inicial = obtener_username_inicial_desde_rut(encargado.rut, exclude_user_id=user.pk)
-        user.set_password(password_temporal)
-        user.username = username_inicial
-        user.save(update_fields=['password', 'username'])
+        user = encargado.user
+        username_inicial = obtener_username_inicial_desde_rut(
+            encargado.rut,
+            exclude_user_id=user.pk if user else None,
+        )
+
+        if not user:
+            user = User.objects.create_user(
+                username=username_inicial,
+                email=encargado.correo,
+                password=password_temporal,
+                first_name=encargado.nombre,
+                is_staff=False,
+                is_superuser=False,
+            )
+            encargado.user = user
+            encargado.save(update_fields=['user'])
+        else:
+            user.set_password(password_temporal)
+            user.username = username_inicial
+            user.email = encargado.correo
+            user.first_name = encargado.nombre
+            user.save(update_fields=['password', 'username', 'email', 'first_name'])
 
         return Response(
             {
@@ -206,3 +217,13 @@ class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=['post'])
+    def reestablecer_password(self, request, pk=None):
+        encargado = self.get_object()
+        return self._reestablecer_cuenta(encargado)
+
+    @action(detail=True, methods=['post'], url_path='restablecer_password')
+    def restablecer_password(self, request, pk=None):
+        encargado = self.get_object()
+        return self._reestablecer_cuenta(encargado)
