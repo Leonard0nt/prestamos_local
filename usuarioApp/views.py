@@ -16,6 +16,7 @@ from .serializers import (
     EncargadoBibliotecaSerializer,
     UsuarioSerializer,
     obtener_password_inicial_desde_rut,
+    obtener_username_inicial_desde_rut,
 )
 
 SESSION_TIMEOUT_SECONDS = 9 * 60 * 60
@@ -192,13 +193,16 @@ class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        username_inicial = obtener_username_inicial_desde_rut(encargado.rut, exclude_user_id=user.pk)
         user.set_password(password_temporal)
-        user.save(update_fields=['password'])
+        user.username = username_inicial
+        user.save(update_fields=['password', 'username'])
 
         return Response(
             {
-                'detail': 'Contraseña reestablecida correctamente.',
+                'detail': 'Cuenta reestablecida correctamente.',
+                'username_inicial': username_inicial,
                 'password_temporal': password_temporal,
             },
             status=status.HTTP_200_OK,
-        )   
+        )

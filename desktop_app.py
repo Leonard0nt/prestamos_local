@@ -71,6 +71,7 @@ def _find_project_root() -> Path | None:
         visited.add(candidate)
         if (candidate / "manage.py").exists():
             return candidate
+
     return None
 
 
@@ -224,7 +225,6 @@ def main() -> int:
         _show_error(message)
         return 1
 
-    manage_py = root / "manage.py"
     _write_log(f"Raíz detectada: {root}")
 
     process = None
@@ -243,6 +243,7 @@ def main() -> int:
             _show_error(error_message)
             return 1
     else:
+        manage_py = root / "manage.py"
         runserver_cmd = [
             _python_executable(),
             str(manage_py),

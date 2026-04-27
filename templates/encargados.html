@@ -267,7 +267,7 @@ function renderizarTablaEncargados() {
                         Editar
                     </button>
                     <button class="btn btn-secondary btn-sm" onclick="reestablecerPasswordEncargado(${e.id})">
-                        Reestablecer clave
+                        Reestablecer cuenta
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="eliminarEncargado(${e.id})">
                         Eliminar
@@ -419,8 +419,8 @@ async function eliminarEncargado(id) {
     cargarEncargados();
 }
 
-async function reestablecerPasswordEncargado(id) {
-    if (!confirm("¿Reestablecer contraseña a los últimos 4 dígitos del RUT?")) return;
+async function reestablecerCuentaEncargado(id) {
+    if (!confirm("¿Reestablecer cuenta al valor inicial (usuario desde RUT y clave temporal)?")) return;
 
     const response = await fetch(`${API}/encargados/${id}/reestablecer_password/`, {
         method: "POST",
@@ -432,11 +432,13 @@ async function reestablecerPasswordEncargado(id) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        alert(data.detail || "No se pudo reestablecer la contraseña");
+        alert(data.detail || "No se pudo reestablecer la cuenta");
         return;
     }
 
-    alert(`Contraseña reestablecida. Nueva contraseña temporal: ${data.password_temporal}`);
+    alert(
+        `Cuenta reestablecida.\nUsuario: ${data.username_inicial}\nContraseña temporal: ${data.password_temporal}`
+    );
 }
 
 cargarEncargados();

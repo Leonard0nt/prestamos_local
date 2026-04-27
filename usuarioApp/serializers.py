@@ -10,6 +10,21 @@ def obtener_password_inicial_desde_rut(rut):
     return digitos_cuerpo[-4:]
 
 
+def obtener_username_inicial_desde_rut(rut, *, exclude_user_id=None):
+    base_username = (rut or '').replace('.', '').replace('-', '').lower()
+    username = base_username
+    idx = 1
+    queryset = User.objects.all()
+    if exclude_user_id is not None:
+        queryset = queryset.exclude(pk=exclude_user_id)
+
+    while queryset.filter(username=username).exists():
+        username = f"{base_username}{idx}"
+        idx += 1
+
+    return username
+
+
 class UsuarioSerializer(serializers.ModelSerializer):
     nivel_pertenencia = serializers.SerializerMethodField()
 
@@ -53,12 +68,7 @@ class EncargadoBibliotecaSerializer(serializers.ModelSerializer):
         correo = validated_data['correo']
         nombre = validated_data['nombre']
 
-        base_username = rut.replace('.', '').replace('-', '').lower()
-        username = base_username
-        idx = 1
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{idx}"
-            idx += 1
+        username = obtener_username_inicial_desde_rut(rut)
 
         password_temporal = obtener_password_inicial_desde_rut(rut)
 
@@ -87,12 +97,7 @@ class EncargadoBibliotecaSerializer(serializers.ModelSerializer):
             user.first_name = instance.nombre
             user.email = instance.correo
 
-            base_username = instance.rut.replace('.', '').replace('-', '').lower()
-            username = base_username
-            idx = 1
-            while User.objects.filter(username=username).exclude(pk=user.pk).exists():
-                username = f"{base_username}{idx}"
-                idx += 1
+            username = obtener_username_inicial_desde_rut(instance.rut, exclude_user_id=user.pk)
 
             user.username = username
             user.save()
