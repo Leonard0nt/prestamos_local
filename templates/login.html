@@ -15,7 +15,7 @@
                 <h1 class="h4 text-center mb-3">📚 Sistema de Biblioteca</h1>
                 <p class="text-center text-secondary mb-4">Inicia sesión como administrador o encargado.</p>
 
-                <form method="post" novalidate>
+                <form id="loginForm" method="post" novalidate>
                     {% csrf_token %}
                     <div class="mb-3">
                         <label class="form-label" for="id_username">Usuario</label>
@@ -28,7 +28,7 @@
                             <button class="btn btn-outline-secondary" type="button" id="togglePassword">Mostrar</button>
                         </div>
                     </div>
-                    <button class="btn btn-primary w-100" type="submit">Ingresar</button>
+                    <button class="btn btn-primary w-100" id="loginSubmitBtn" type="submit">Ingresar</button>
                 </form>
             </div>
         </div>
@@ -37,11 +37,19 @@
     <script>
         const passwordInput = document.getElementById('id_password');
         const togglePasswordBtn = document.getElementById('togglePassword');
+        const loginForm = document.getElementById('loginForm');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 
         togglePasswordBtn.addEventListener('click', () => {
             const isHidden = passwordInput.type === 'password';
             passwordInput.type = isHidden ? 'text' : 'password';
             togglePasswordBtn.innerText = isHidden ? 'Ocultar' : 'Mostrar';
+        });
+        loginForm.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            if (event.target === togglePasswordBtn) return;
+            event.preventDefault();
+            loginForm.requestSubmit(loginSubmitBtn);
         });
     </script>
 

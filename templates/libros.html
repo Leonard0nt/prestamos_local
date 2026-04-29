@@ -46,6 +46,12 @@ thead, tbody, tr, td, th {
     color: #842029 !important;
 }
 
+.estado-prestado {
+    background-color: #fff3cd !important;
+    border-color: #ffc107 !important;
+    color: #664d03 !important;
+}
+
 .btn-accion-libro {
     min-height: 38px;
     font-size: 0.85rem;
@@ -410,19 +416,24 @@ async function cargarEjemplares(libro_id) {
 function renderEstadoOpciones(estadoActual) {
     const opciones = [
         { valor: "disponible", etiqueta: "Disponible" },
+        { valor: "prestado", etiqueta: "Prestado", soloLectura: true },
         { valor: "extraviado", etiqueta: "Extraviado" },
         { valor: "danado", etiqueta: "Dañado" }
     ];
 
-    return opciones.map((opcion) => `
-        <option value="${opcion.valor}" ${opcion.valor === estadoActual ? "selected" : ""}>
-            ${opcion.etiqueta}
-        </option>
-    `).join("");
+    return opciones.map((opcion) => {
+        const seleccionado = opcion.valor === estadoActual ? "selected" : "";
+        const deshabilitado = opcion.soloLectura ? "disabled" : "";
+        return `
+            <option value="${opcion.valor}" ${seleccionado} ${deshabilitado}>
+                ${opcion.etiqueta}
+            </option>
+        `;
+    }).join("");
 }
 
 function aplicarColorEstadoSelect(selectElement, estado) {
-    const clasesEstado = ["estado-disponible", "estado-extraviado", "estado-danado"];
+    const clasesEstado = ["estado-disponible", "estado-prestado", "estado-extraviado", "estado-danado"];
     selectElement.classList.remove(...clasesEstado);
     selectElement.classList.add(`estado-${estado}`);
 }
