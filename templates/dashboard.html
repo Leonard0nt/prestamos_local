@@ -80,7 +80,9 @@
                 </div>
 
                 <div class="modal-body">
+                    <input type="text" id="buscador_usuario" class="form-control mb-2" placeholder="🔎 Buscar usuario o curso..." oninput="filtrarOpcionesSelect('crear_usuario', this.value)">
                     <select id="crear_usuario" class="form-control mb-2"></select>
+                    <input type="text" id="buscador_libro" class="form-control mb-2" placeholder="🔎 Buscar libro..." oninput="filtrarOpcionesSelect('crear_libro', this.value)">
                     <select id="crear_libro" class="form-control mb-2" onchange="cargarEjemplaresLibro()"></select>
 
                     <select id="crear_ejemplar" class="form-control mb-2">
@@ -363,7 +365,8 @@ async function cargarSelects() {
     selUser.innerHTML = "";
     selLibro.innerHTML = "";
     usuariosFiltrados.forEach(u => {
-        selUser.innerHTML += `<option value="${u.id}">${u.nombre}</option>`;
+        const cursoTexto = u.curso ? ` - ${u.curso}` : "";
+        selUser.innerHTML += `<option value="${u.id}">${u.nombre}${cursoTexto}</option>`;
     });
 
     librosFiltrados.forEach(l => {
@@ -382,6 +385,24 @@ async function cargarSelects() {
     await cargarEjemplaresLibro();
     precargarFechaDevolucion();
 }
+        function filtrarOpcionesSelect(selectId, textoBusqueda) {
+            const select = document.getElementById(selectId);
+            const filtro = (textoBusqueda || "").toLowerCase().trim();
+            const opciones = Array.from(select.options);
+
+            opciones.forEach((opcion) => {
+                const texto = opcion.text.toLowerCase();
+                opcion.hidden = Boolean(filtro) && !texto.includes(filtro);
+            });
+
+            const opcionVisible = opciones.find((opcion) => !opcion.hidden && opcion.value);
+            if (opcionVisible) {
+                select.value = opcionVisible.value;
+                if (selectId === "crear_libro") {
+                    cargarEjemplaresLibro();
+                }
+            }
+        }
         // ================= CREAR =================
         async function crearPrestamo() {
 
