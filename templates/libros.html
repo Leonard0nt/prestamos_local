@@ -423,7 +423,8 @@ function renderEstadoOpciones(estadoActual) {
 
     return opciones.map((opcion) => {
         const seleccionado = opcion.valor === estadoActual ? "selected" : "";
-        const deshabilitado = opcion.soloLectura ? "disabled" : "";
+        const disponibleBloqueadoPorPrestamo = estadoActual === "prestado" && opcion.valor === "disponible";
+        const deshabilitado = (opcion.soloLectura || disponibleBloqueadoPorPrestamo) ? "disabled" : "";
         return `
             <option value="${opcion.valor}" ${seleccionado} ${deshabilitado}>
                 ${opcion.etiqueta}

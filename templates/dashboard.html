@@ -175,12 +175,27 @@
             }
             return cookieValue;
         }
+        function normalizarNivel(valor) {
+            if (!valor) return "";
+            return valor.toString().trim().toUpperCase();
+        }
+
+        function obtenerNivelSeleccionado() {
+            if (!ES_ADMIN) return "";
+            return normalizarNivel(document.getElementById("crear_nivel")?.value);
+        }
+
+        function cumpleNivel(item, nivelSeleccionado) {
+            if (!nivelSeleccionado) return true;
+            return normalizarNivel(item?.nivel_asignado) === nivelSeleccionado;
+        }
+
         // ================= CARGAR EJEMPLARES =================
 async function cargarEjemplaresLibro() {
 
     const libroId = document.getElementById("crear_libro").value;
 
-    if (!libroId) return; // 
+    if (!libroId) return; 
 
     const res = await fetch(`${API}/libros/${libroId}/ejemplares_json/`);
     const data = await res.json();
@@ -199,7 +214,7 @@ async function cargarEjemplaresLibro() {
     });
 
     if (select.innerHTML === "") {
-        select.innerHTML = `<option>No hay ejemplares disponibles</option>`;
+        select.innerHTML = `<option  value="">No hay ejemplares disponibles</option>`;
     }
 }
         // ================= CARGAR =================
@@ -336,23 +351,35 @@ async function cargarSelects() {
     const usuarios = await fetch(`${API}/usuarios/`).then(r => r.json());
     const libros = await fetch(`${API}/libros/`).then(r => r.json());
     usuariosData = usuarios;
-    
+
+
+    const nivelSeleccionado = obtenerNivelSeleccionado();
+    const usuariosFiltrados = ES_ADMIN ? usuarios.filter((u) => cumpleNivel(u, nivelSeleccionado)) : usuarios;
+    const librosFiltrados = ES_ADMIN ? libros.filter((l) => cumpleNivel(l, nivelSeleccionado)) : libros;
+
     const selUser = document.getElementById("crear_usuario");
     const selLibro = document.getElementById("crear_libro");
 
     selUser.innerHTML = "";
     selLibro.innerHTML = "";
-
-    usuarios.forEach(u => {
+    usuariosFiltrados.forEach(u => {
         selUser.innerHTML += `<option value="${u.id}">${u.nombre}</option>`;
     });
 
-    libros.forEach(l => {
+    librosFiltrados.forEach(l => {
         selLibro.innerHTML += `<option value="${l.id}">${l.titulo}</option>`;
     });
 
     
-    cargarEjemplaresLibro();
+    if (!usuariosFiltrados.length) {
+        selUser.innerHTML = `<option value="">No hay usuarios para este nivel</option>`;
+    }
+
+    if (!librosFiltrados.length) {
+        selLibro.innerHTML = `<option value="">No hay libros para este nivel</option>`;
+    }
+
+    await cargarEjemplaresLibro();
     precargarFechaDevolucion();
 }
         // ================= CREAR =================
@@ -426,6 +453,9 @@ async function cargarSelects() {
         cargarPrestamos({ reiniciarPagina: true });
         if (!ES_VISTA_ARCHIVADOS) {
             cargarSelects();
+            if (ES_ADMIN) {
+                document.getElementById("crear_nivel").addEventListener("change", cargarSelects);
+            }
         }
         setInterval(() => {
             if (!document.hidden) {
