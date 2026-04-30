@@ -79,7 +79,7 @@ thead th {
         <input id="crear_email" class="form-control mb-2" placeholder="Email">
         <div class="mb-2">
           <label class="form-label mb-1">Curso</label>
-          <details class="border rounded p-2 mb-1">
+          <details class="border rounded p-2 mb-1 grupo-basica">
             <summary><strong>Básica (1° a 8°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','1°')">1°</button>
@@ -92,7 +92,7 @@ thead th {
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','8°')">8°</button>
             </div>
           </details>
-          <details class="border rounded p-2">
+          <details class="border rounded p-2 grupo-media">
             <summary><strong>Media (1M° a 4M°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
               <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','1M°')">1M°</button>
@@ -154,7 +154,7 @@ thead th {
           <label class="form-label mb-1">Curso</label>
           <input id="edit_curso" class="form-control mb-2" placeholder="Curso (ej: 1°A o 3M°B)" readonly>
           <input id="edit_letra_curso" class="form-control mb-2" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('edit')">
-          <details class="border rounded p-2 mb-1">
+          <details class="border rounded p-2 mb-1 grupo-basica">
             <summary><strong>Básica (1° a 8°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','1°')">1°</button>
@@ -167,7 +167,7 @@ thead th {
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','8°')">8°</button>
             </div>
           </details>
-          <details class="border rounded p-2">
+          <details class="border rounded p-2 grupo-media">
             <summary><strong>Media (1M° a 4M°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
               <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','1M°')">1M°</button>
@@ -486,7 +486,12 @@ async function crearUsuario() {
     const rutInput = document.getElementById("crear_rut");
     const rut = rutInput.value;
     const nivel_asignado = ES_ADMIN ? document.getElementById("crear_nivel").value : null;
+    const nivelCurso = obtenerNivelAcademicoDeCurso(curso);
 
+    if (!ES_ADMIN && ENCARGADO_NIVEL && nivelCurso !== ENCARGADO_NIVEL) {
+        alert("Solo puedes agregar estudiantes de tu nivel asignado.");
+        return;
+    }
     if (!validarRUT(rutInput)) {
         alert("RUT inválido");
         return;
