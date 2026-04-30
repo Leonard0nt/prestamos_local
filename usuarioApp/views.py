@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from rest_framework import permissions, status, viewsets
+from prestamoApp.models import prestamo
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -158,16 +159,21 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         usuario_obj = self.get_object()
-        if not usuario_obj.activo:
+        if usuario_obj.activo:
+            usuario_obj.activo = False
+            usuario_obj.save(update_fields=['activo'])
             return Response(
-                {'detail': 'El usuario ya está desactivado.'},
+                {'detail': 'Usuario desactivado correctamente. Se conserva su historial.'},
                 status=status.HTTP_200_OK,
             )
 
-        usuario_obj.activo = False
-        usuario_obj.save(update_fields=['activo'])
+        prestamos_eliminados, _ = prestamo.objects.filter(usuario=usuario_obj).delete()
+        usuario_obj.delete()
         return Response(
-            {'detail': 'Usuario desactivado correctamente. Se conserva su historial.'},
+            {
+                'detail': 'Usuario eliminado definitivamente junto con sus préstamos.',
+                'prestamos_eliminados': prestamos_eliminados,
+            },
             status=status.HTTP_200_OK,
         )
 

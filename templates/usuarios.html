@@ -321,7 +321,10 @@ function renderizarTablaUsuarios() {
                     ${
                         USUARIOS_VISTA === "activos"
                             ? `<button class="btn btn-danger btn-sm" onclick="desactivarUsuario(${u.id})">Dar de baja</button>`
-                            : `<button class="btn btn-success btn-sm" onclick="reactivarUsuario(${u.id})">Reactivar</button>`
+                            : `
+                                <button class="btn btn-success btn-sm" onclick="reactivarUsuario(${u.id})">Reactivar</button>
+                                <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${u.id})">Eliminar</button>
+                            `
                     }
                 </td>
             </tr>
@@ -575,6 +578,27 @@ async function desactivarUsuario(id) {
 
     alert(data.detail || "Alumno desactivado correctamente.");
     cargarUsuarios();
+}
+
+
+async function eliminarUsuario(id) {
+    if (!confirm("¿Eliminar definitivamente este usuario dado de baja? Esta acción también eliminará sus registros de préstamos y no se puede deshacer.")) return;
+
+    const response = await fetch(`${API}/usuarios/${id}/`, {
+        method: "DELETE",
+        headers: {
+            ...getCsrfHeaders()
+        }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo eliminar el usuario.");
+        return;
+    }
+
+    alert(data.detail || "Usuario eliminado correctamente.");
+    cargarUsuarios({ resetPagina: true });
 }
 
 async function reactivarUsuario(id) {
