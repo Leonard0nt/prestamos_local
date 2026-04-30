@@ -77,7 +77,35 @@ thead th {
         <input id="crear_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="crear_apellidos" class="form-control mb-2" placeholder="Apellidos">
         <input id="crear_email" class="form-control mb-2" placeholder="Email">
-        <input id="crear_curso" class="form-control mb-2" placeholder="Curso">
+        <div class="mb-2">
+          <label class="form-label mb-1">Curso</label>
+          <details class="border rounded p-2 mb-1">
+            <summary><strong>Básica (1° a 8°)</strong></summary>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','1°')">1°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','2°')">2°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','3°')">3°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','4°')">4°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','5°')">5°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','6°')">6°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','7°')">7°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','8°')">8°</button>
+            </div>
+          </details>
+          <details class="border rounded p-2">
+            <summary><strong>Media (1M° a 4M°)</strong></summary>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','1M°')">1M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','2M°')">2M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','3M°')">3M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','4M°')">4M°</button>
+            </div>
+          </details>
+          <div class="d-flex gap-2 mb-2">
+            <input id="crear_letra_curso" class="form-control" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('crear')">
+          </div>
+        </div>
+        <input id="crear_curso" class="form-control mb-2" placeholder="Curso (ej: 1°A o 3M°B)" readonly>
         <input id="crear_rut"
        class="form-control mb-2"
        placeholder="12.345.678-5"
@@ -122,7 +150,33 @@ thead th {
         <input id="edit_nombres" class="form-control mb-2" placeholder="Nombres">
         <input id="edit_apellidos" class="form-control mb-2" placeholder="Apellidos">
         <input id="edit_email" class="form-control mb-2">
-        <input id="edit_curso" class="form-control mb-2" placeholder="Curso">
+        <div class="mb-2">
+          <label class="form-label mb-1">Curso</label>
+          <input id="edit_curso" class="form-control mb-2" placeholder="Curso (ej: 1°A o 3M°B)" readonly>
+          <input id="edit_letra_curso" class="form-control mb-2" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('edit')">
+          <details class="border rounded p-2 mb-1">
+            <summary><strong>Básica (1° a 8°)</strong></summary>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','1°')">1°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','2°')">2°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','3°')">3°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','4°')">4°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','5°')">5°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','6°')">6°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','7°')">7°</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','8°')">8°</button>
+            </div>
+          </details>
+          <details class="border rounded p-2">
+            <summary><strong>Media (1M° a 4M°)</strong></summary>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','1M°')">1M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','2M°')">2M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','3M°')">3M°</button>
+              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','4M°')">4M°</button>
+            </div>
+          </details>
+        </div>
         <input id="edit_rut"
        class="form-control mb-2"
        oninput="formatearRUT(this)"
@@ -353,6 +407,51 @@ function construirNombreCompleto(nombres, apellidos) {
         .filter(Boolean)
         .join(" ");
 }
+
+function seleccionarNivelCurso(contexto, nivel) {
+    const nivelInput = document.getElementById(`${contexto}_nivel_base`);
+    if (!nivelInput) {
+        const hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.id = `${contexto}_nivel_base`;
+        hidden.value = nivel;
+        document.body.appendChild(hidden);
+    } else {
+        nivelInput.value = nivel;
+    }
+    actualizarCursoDesdeSelector(contexto);
+}
+
+function actualizarCursoDesdeSelector(contexto) {
+    const nivelBase = document.getElementById(`${contexto}_nivel_base`)?.value || "";
+    const letraInput = document.getElementById(`${contexto}_letra_curso`);
+    const cursoInput = document.getElementById(`${contexto}_curso`);
+    if (!letraInput || !cursoInput) return;
+
+    letraInput.value = (letraInput.value || "").replace(/[^a-zA-Z]/g, "").toUpperCase();
+    cursoInput.value = nivelBase ? `${nivelBase}${letraInput.value}` : letraInput.value;
+}
+
+function cargarCursoExistente(contexto, curso) {
+    const valor = (curso || "").trim().toUpperCase();
+    const match = valor.match(/^(1M°|2M°|3M°|4M°|[1-8]°)\s*([A-Z])?$/);
+    const nivel = match ? match[1] : "";
+    const letra = match ? (match[2] || "") : "";
+
+    let nivelInput = document.getElementById(`${contexto}_nivel_base`);
+    if (!nivelInput) {
+        nivelInput = document.createElement("input");
+        nivelInput.type = "hidden";
+        nivelInput.id = `${contexto}_nivel_base`;
+        document.body.appendChild(nivelInput);
+    }
+    nivelInput.value = nivel;
+
+    const letraInput = document.getElementById(`${contexto}_letra_curso`);
+    if (letraInput) letraInput.value = letra;
+    document.getElementById(`${contexto}_curso`).value = valor;
+}
+
 // ================= CREAR =================
 async function crearUsuario() {
     const nombres = document.getElementById("crear_nombres").value;
@@ -360,6 +459,10 @@ async function crearUsuario() {
     const nombre = construirNombreCompleto(nombres, apellidos);
     const email = document.getElementById("crear_email").value.trim();
     const curso = document.getElementById("crear_curso").value.trim();
+    if (!curso) {
+        alert("Selecciona un nivel y agrega la letra del curso (ej: 1°A o 3M°B).");
+        return;
+    }
     const rutInput = document.getElementById("crear_rut");
     const rut = rutInput.value;
     const nivel_asignado = ES_ADMIN ? document.getElementById("crear_nivel").value : null;
@@ -433,7 +536,7 @@ function abrirEditar(u) {
     document.getElementById("edit_id").value = u.id;
     document.getElementById("edit_nombres").value = nombres;
     document.getElementById("edit_apellidos").value = apellidos;
-    document.getElementById("edit_curso").value = u.curso || "";
+    cargarCursoExistente("edit", u.curso || "");
     document.getElementById("edit_email").value = u.email;
     document.getElementById("edit_rut").value = u.rut;
     document.getElementById("edit_telefono").value = u.telefono.replace("+56", "");
@@ -449,6 +552,10 @@ async function guardarEdicion() {
     const apellidos = document.getElementById("edit_apellidos").value;
     const nombre = construirNombreCompleto(nombres, apellidos);
     const curso = document.getElementById("edit_curso").value.trim();
+    if (!curso) {
+        alert("Selecciona un nivel y agrega la letra del curso.");
+        return;
+    }
     const email = document.getElementById("edit_email").value.trim();
     const rutInput = document.getElementById("edit_rut");
     const rut = rutInput.value;
