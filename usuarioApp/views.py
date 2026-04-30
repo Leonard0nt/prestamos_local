@@ -138,7 +138,14 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     @staticmethod
     @login_required(login_url='login')
     def usuarios_view(request):
-        return render(request, 'usuarios.html')
+        encargado = getattr(request.user, 'encargado', None)
+        return render(
+            request,
+            'usuarios.html',
+            {
+                'encargado_nivel': encargado.nivel if encargado else '',
+            },
+        )
 
     def destroy(self, request, *args, **kwargs):
         usuario_obj = self.get_object()

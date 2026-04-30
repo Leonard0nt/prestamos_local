@@ -201,6 +201,7 @@ thead th {
 <script>
 const API = window.location.origin;
 const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
+const ENCARGADO_NIVEL = "{{ encargado_nivel|default:'' }}";
 const REGISTROS_POR_PAGINA = 20;
 const REFRESH_INTERVAL_MS = 10000;
 let usuariosData = [];
@@ -221,6 +222,25 @@ function getCookie(name) {
 function getCsrfHeaders() {
     const csrftoken = getCookie('csrftoken');
     return csrftoken ? { "X-CSRFToken": csrftoken } : {};
+}
+
+function obtenerNivelAcademicoDeCurso(curso = "") {
+    return /M°/.test((curso || "").toUpperCase()) ? "MEDIA" : "BASICA";
+}
+
+function aplicarRestriccionNivelCurso() {
+    if (ES_ADMIN) return;
+
+    const nivelPermitido = ENCARGADO_NIVEL;
+    const mostrarBasica = nivelPermitido === "BASICA";
+    const mostrarMedia = nivelPermitido === "MEDIA";
+
+    document.querySelectorAll(".grupo-basica").forEach((el) => {
+        el.style.display = mostrarBasica ? "" : "none";
+    });
+    document.querySelectorAll(".grupo-media").forEach((el) => {
+        el.style.display = mostrarMedia ? "" : "none";
+    });
 }
 
 // ================= CARGAR =================
@@ -557,6 +577,11 @@ async function guardarEdicion() {
         return;
     }
     const email = document.getElementById("edit_email").value.trim();
+    const nivelCurso = obtenerNivelAcademicoDeCurso(curso);
+    if (!ES_ADMIN && ENCARGADO_NIVEL && nivelCurso !== ENCARGADO_NIVEL) {
+        alert("Solo puedes editar estudiantes de tu nivel asignado.");
+        return;
+    }
     const rutInput = document.getElementById("edit_rut");
     const rut = rutInput.value;
     if (!validarRUT(rutInput)) {
@@ -589,6 +614,7 @@ function iniciarAutoRefreshUsuarios() {
 // ================= INIT =================
 cargarUsuarios({ resetPagina: true });
 iniciarAutoRefreshUsuarios();
+aplicarRestriccionNivelCurso();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
