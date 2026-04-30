@@ -161,7 +161,15 @@
                 <li><a class="dropdown-item {% if active == 'prestamos_archivados' %}active{% endif %}" href="/?vista=archivados">Préstamos archivados</a></li>
             </ul>
         </div>
-        <a class="tab-link {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/">👥 Usuarios</a>
+        <div class="dropdown tab-dropdown">
+            <button class="tab-link dropdown-toggle {% if active == 'usuarios' or active == 'usuarios_baja' %}active{% endif %}" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                👥 Alumnos
+            </button>
+            <ul class="dropdown-menu text-center">
+                <li><a class="dropdown-item {% if active == 'usuarios' %}active{% endif %}" href="/usuarios-ui/?vista=activos">Estudiantes activos</a></li>
+                <li><a class="dropdown-item {% if active == 'usuarios_baja' %}active{% endif %}" href="/usuarios-ui/?vista=baja">Estudiantes de baja</a></li>
+            </ul>
+        </div>
     </nav>
 </div>
 

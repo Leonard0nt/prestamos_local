@@ -112,6 +112,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = usuario.objects.all()
+        vista = self.request.query_params.get('vista', 'activos')
+        vista = vista if vista in {'activos', 'baja'} else 'activos'
 
         if not self.request.user.is_superuser:
             encargado = getattr(self.request.user, 'encargado', None)
@@ -124,7 +126,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 return queryset.none()
 
         if self.action == 'list':
-            queryset = queryset.filter(activo=True)
+            queryset = queryset.filter(activo=(vista == 'activos'))
 
         return queryset
 
@@ -140,6 +142,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     def usuarios_view(request):
         encargado = getattr(request.user, 'encargado', None)
         nivel_normalizado = (getattr(encargado, 'nivel', '') or '').strip().upper()
+        vista = request.GET.get('vista', 'activos')
+        vista = vista if vista in {'activos', 'baja'} else 'activos'
         return render(
             request,
             'usuarios.html',
@@ -147,6 +151,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 'encargado_nivel': nivel_normalizado,
                 'mostrar_basica': request.user.is_superuser or nivel_normalizado == 'BASICA',
                 'mostrar_media': request.user.is_superuser or nivel_normalizado == 'MEDIA',
+                'usuarios_vista': vista,
+                'active_tab': 'usuarios_baja' if vista == 'baja' else 'usuarios',
             },
         )
 
@@ -165,6 +171,21 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=True, methods=['post'])
+    def reactivar(self, request, pk=None):
+        usuario_obj = self.get_object()
+        if usuario_obj.activo:
+            return Response(
+                {'detail': 'El usuario ya se encuentra activo.'},
+                status=status.HTTP_200_OK,
+            )
+
+        usuario_obj.activo = True
+        usuario_obj.save(update_fields=['activo'])
+        return Response(
+            {'detail': 'Usuario reactivado correctamente.'},
+            status=status.HTTP_200_OK,
+        )
 
 class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
     queryset = EncargadoBiblioteca.objects.all()

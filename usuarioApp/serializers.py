@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import EncargadoBiblioteca, usuario
+import re
 
 
 def obtener_password_inicial_desde_rut(rut):
@@ -37,17 +38,23 @@ class UsuarioSerializer(serializers.ModelSerializer):
         encargado = getattr(obj, 'encargado_agrego', None)
         return encargado.get_nivel_display() if encargado else ''
 
+    @staticmethod
+    def _obtener_nivel_desde_curso(curso):
+        curso_normalizado = (curso or '').strip().upper().replace(' ', '')
+        if re.match(r'^(1M°|2M°|3M°|4M°)[A-Z]?$', curso_normalizado):
+            return usuario.NIVEL_MEDIA
+        if re.match(r'^([1-8]°)[A-Z]?$', curso_normalizado):
+            return usuario.NIVEL_BASICA
+        return None
+
     def validate(self, attrs):
-        request = self.context.get('request')
-        if (
-            request
-            and request.user.is_superuser
-            and self.instance is None
-            and not attrs.get('nivel_asignado')
-        ):
-            raise serializers.ValidationError(
-                {'nivel_asignado': 'Debes seleccionar un nivel (Basica o Media).'}
-            )
+        if self.instance is None and not attrs.get('nivel_asignado'):
+            nivel_inferido = self._obtener_nivel_desde_curso(attrs.get('curso'))
+            if not nivel_inferido:
+                raise serializers.ValidationError(
+                    {'curso': 'No se pudo determinar el nivel desde el curso indicado.'}
+                )
+            attrs['nivel_asignado'] = nivel_inferido
         return attrs
 
     class Meta:
