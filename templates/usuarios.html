@@ -79,6 +79,7 @@ thead th {
         <input id="crear_email" class="form-control mb-2" placeholder="Email">
         <div class="mb-2">
           <label class="form-label mb-1">Curso</label>
+          {% if request.user.is_superuser or encargado_nivel == "BASICA" %}x
           <details class="border rounded p-2 mb-1 grupo-basica">
             <summary><strong>Básica (1° a 8°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
@@ -92,6 +93,8 @@ thead th {
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','8°')">8°</button>
             </div>
           </details>
+          {% endif %}
+          {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
           <details class="border rounded p-2 grupo-media">
             <summary><strong>Media (1M° a 4M°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
@@ -101,6 +104,7 @@ thead th {
               <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','4M°')">4M°</button>
             </div>
           </details>
+          {% endif %}
           <div class="d-flex gap-2 mb-2">
             <input id="crear_letra_curso" class="form-control" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('crear')">
           </div>
@@ -167,6 +171,9 @@ thead th {
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','8°')">8°</button>
             </div>
           </details>
+
+          {% endif %}
+          {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
           <details class="border rounded p-2 grupo-media">
             <summary><strong>Media (1M° a 4M°)</strong></summary>
             <div class="d-flex flex-wrap gap-1 mt-2">
@@ -176,6 +183,7 @@ thead th {
               <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','4M°')">4M°</button>
             </div>
           </details>
+          {% endif %}
         </div>
         <input id="edit_rut"
        class="form-control mb-2"
@@ -201,7 +209,7 @@ thead th {
 <script>
 const API = window.location.origin;
 const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
-const ENCARGADO_NIVEL = "{{ encargado_nivel|default:'' }}";
+const ENCARGADO_NIVEL = "{{ encargado_nivel|default:'' }}".toUpperCase().trim();
 const REGISTROS_POR_PAGINA = 20;
 const REFRESH_INTERVAL_MS = 10000;
 let usuariosData = [];
