@@ -80,33 +80,40 @@ thead th {
         <div class="mb-2">
           <label class="form-label mb-1">Curso</label>
           {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
-          <details class="border rounded p-2 mb-1 grupo-basica">
-            <summary><strong>Básica (1° a 8°)</strong></summary>
-            <div class="d-flex flex-wrap gap-1 mt-2">
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','1°')">1°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','2°')">2°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','3°')">3°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','4°')">4°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','5°')">5°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','6°')">6°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','7°')">7°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','8°')">8°</button>
+          <div class="row g-2 align-items-start mb-2">
+            <div class="col-12 col-md-9">
+              {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
+              <details class="border rounded p-2 mb-1 grupo-basica">
+                <summary><strong>Básica (1° a 8°)</strong></summary>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','1°')">1°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','2°')">2°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','3°')">3°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','4°')">4°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','5°')">5°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','6°')">6°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','7°')">7°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('crear','8°')">8°</button>
+                </div>
+              </details>
+              {% endif %}
+              {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
+              <details class="border rounded p-2 grupo-media">
+                <summary><strong>Media (1M° a 4M°)</strong></summary>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','1M°')">1M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','2M°')">2M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','3M°')">3M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','4M°')">4M°</button>
+                </div>
+              </details>
+              {% endif %}
             </div>
           </details>
           {% endif %}
-          {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
-          <details class="border rounded p-2 grupo-media">
-            <summary><strong>Media (1M° a 4M°)</strong></summary>
-            <div class="d-flex flex-wrap gap-1 mt-2">
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','1M°')">1M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','2M°')">2M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','3M°')">3M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('crear','4M°')">4M°</button>
+            <div class="col-12 col-md-3">
+              <input id="crear_letra_curso" class="form-control" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('crear')">
             </div>
-          </details>
-          {% endif %}
-          <div class="d-flex gap-2 mb-2">
-            <input id="crear_letra_curso" class="form-control" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('crear')">
           </div>
         </div>
         <input id="crear_curso" class="form-control mb-2" placeholder="Curso (ej: 1°A o 3M°B)" readonly>
@@ -156,35 +163,40 @@ thead th {
         <input id="edit_email" class="form-control mb-2">
         <div class="mb-2">
           <label class="form-label mb-1">Curso</label>
+          <div class="row g-2 align-items-start mb-2">
+            <div class="col-12 col-md-9">
+              {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
+              <details class="border rounded p-2 mb-1 grupo-basica">
+                <summary><strong>Básica (1° a 8°)</strong></summary>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','1°')">1°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','2°')">2°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','3°')">3°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','4°')">4°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','5°')">5°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','6°')">6°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','7°')">7°</button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','8°')">8°</button>
+                </div>
+              </details>
+              {% endif %}
+              {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
+              <details class="border rounded p-2 grupo-media">
+                <summary><strong>Media (1M° a 4M°)</strong></summary>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','1M°')">1M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','2M°')">2M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','3M°')">3M°</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','4M°')">4M°</button>
+                </div>
+              </details>
+              {% endif %}
+            </div>
+            <div class="col-12 col-md-3">
+              <input id="edit_letra_curso" class="form-control" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('edit')">
+            </div>
+          </div>
           <input id="edit_curso" class="form-control mb-2" placeholder="Curso (ej: 1°A o 3M°B)" readonly>
-          <input id="edit_letra_curso" class="form-control mb-2" maxlength="1" placeholder="Letra (A-Z)" oninput="actualizarCursoDesdeSelector('edit')">
-          {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
-          <details class="border rounded p-2 mb-1 grupo-basica">
-            <summary><strong>Básica (1° a 8°)</strong></summary>
-            <div class="d-flex flex-wrap gap-1 mt-2">
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','1°')">1°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','2°')">2°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','3°')">3°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','4°')">4°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','5°')">5°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','6°')">6°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','7°')">7°</button>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarNivelCurso('edit','8°')">8°</button>
-            </div>
-          </details>
-
-          {% endif %}
-          {% if request.user.is_superuser or encargado_nivel == "MEDIA" %}
-          <details class="border rounded p-2 grupo-media">
-            <summary><strong>Media (1M° a 4M°)</strong></summary>
-            <div class="d-flex flex-wrap gap-1 mt-2">
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','1M°')">1M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','2M°')">2M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','3M°')">3M°</button>
-              <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarNivelCurso('edit','4M°')">4M°</button>
-            </div>
-          </details>
-          {% endif %}
         </div>
         <input id="edit_rut"
        class="form-control mb-2"
