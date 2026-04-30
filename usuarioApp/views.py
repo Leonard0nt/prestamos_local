@@ -139,11 +139,14 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     @login_required(login_url='login')
     def usuarios_view(request):
         encargado = getattr(request.user, 'encargado', None)
+        nivel_normalizado = (getattr(encargado, 'nivel', '') or '').strip().upper()
         return render(
             request,
             'usuarios.html',
             {
-                'encargado_nivel': encargado.nivel if encargado else '',
+                'encargado_nivel': nivel_normalizado,
+                'mostrar_basica': request.user.is_superuser or nivel_normalizado == 'BASICA',
+                'mostrar_media': request.user.is_superuser or nivel_normalizado == 'MEDIA',
             },
         )
 
