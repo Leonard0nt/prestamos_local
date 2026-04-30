@@ -117,11 +117,66 @@ thead th {
         </div>
     </div>
 
+        <div class="modal fade" id="modalConfirmacionSistema" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sistema</h5>
+                </div>
+                <div class="modal-body" id="mensajeConfirmacionSistema"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelarConfirmacionSistema">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnAceptarConfirmacionSistema">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
 const API = window.location.origin;
 const REGISTROS_POR_PAGINA = 20;
 let encargadosData = [];
 let encargadosPaginaActual = 1;
+
+function confirmarSistema(mensaje) {
+    const modalEl = document.getElementById("modalConfirmacionSistema");
+    const mensajeEl = document.getElementById("mensajeConfirmacionSistema");
+    const btnAceptar = document.getElementById("btnAceptarConfirmacionSistema");
+    const btnCancelar = document.getElementById("btnCancelarConfirmacionSistema");
+
+    mensajeEl.textContent = mensaje;
+    const modal = new bootstrap.Modal(modalEl);
+
+    return new Promise((resolve) => {
+        const limpiarEventos = () => {
+            btnAceptar.removeEventListener("click", onAceptar);
+            btnCancelar.removeEventListener("click", onCancelar);
+            modalEl.removeEventListener("hidden.bs.modal", onCerrar);
+        };
+
+        const onAceptar = () => {
+            limpiarEventos();
+            modal.hide();
+            resolve(true);
+        };
+
+        const onCancelar = () => {
+            limpiarEventos();
+            modal.hide();
+            resolve(false);
+        };
+
+        const onCerrar = () => {
+            limpiarEventos();
+            resolve(false);
+        };
+
+        btnAceptar.addEventListener("click", onAceptar);
+        btnCancelar.addEventListener("click", onCancelar);
+        modalEl.addEventListener("hidden.bs.modal", onCerrar, { once: true });
+        modal.show();
+    });
+}
 
 function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -400,7 +455,7 @@ async function guardarEdicion() {
 }
 
 async function eliminarEncargado(id) {
-    if (!confirm("¿Eliminar encargado?")) return;
+    if (!await confirmarSistema("¿Eliminar encargado?")) return;
 
     const response = await fetch(`${API}/encargados/${id}/`, {
         method: "DELETE",
@@ -420,7 +475,7 @@ async function eliminarEncargado(id) {
 }
 
 async function reestablecerCuentaEncargado(id) {
-    if (!confirm("¿Reestablecer cuenta al valor inicial (usuario desde RUT y clave temporal)?")) return;
+    if (!await confirmarSistema("¿Reestablecer cuenta al valor inicial (usuario desde RUT y clave temporal)?")) return;
 
     const endpoints = [
         `${API}/encargados/${id}/reestablecer_password/`,
