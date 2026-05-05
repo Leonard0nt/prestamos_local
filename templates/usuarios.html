@@ -79,7 +79,7 @@ thead th {
         <input id="crear_email" class="form-control mb-2" placeholder="Email">
         <div class="mb-2">
           <label class="form-label mb-1">Curso</label>
-          {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
+          {% if request.user.is_superuser or encargado_nivel == "BASICA" or encargado_nivel == "MEDIA" %}
           <div class="row g-2 align-items-start mb-2">
             <div class="col-12 col-md-9">
               {% if request.user.is_superuser or encargado_nivel == "BASICA" %}
