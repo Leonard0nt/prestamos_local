@@ -254,6 +254,20 @@ thead, tbody, tr, td, th {
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="modalConfirmacionSistema" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloConfirmacionSistema">Sistema</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="mensajeConfirmacionSistema"></div>
+      <div class="modal-footer" id="accionesConfirmacionSistema"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
 const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
@@ -287,6 +301,59 @@ function escapeTextoJs(texto) {
     return (texto || "")
         .replace(/\\/g, "\\\\")
         .replace(/'/g, "\\'");
+}
+
+function mostrarVentanaSistema({ titulo = "Sistema", mensaje = "", confirmarTexto = "Aceptar", cancelarTexto = "Cancelar", mostrarCancelar = false } = {}) {
+    const modalEl = document.getElementById("modalConfirmacionSistema");
+    document.getElementById("tituloConfirmacionSistema").textContent = titulo;
+    document.getElementById("mensajeConfirmacionSistema").textContent = mensaje;
+
+    const acciones = document.getElementById("accionesConfirmacionSistema");
+    acciones.innerHTML = "";
+
+    return new Promise((resolve) => {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        let cerradoSinAccion = true;
+
+        if (mostrarCancelar) {
+            const btnCancelar = document.createElement("button");
+            btnCancelar.className = "btn btn-secondary";
+            btnCancelar.textContent = cancelarTexto;
+            btnCancelar.onclick = () => {
+                cerradoSinAccion = false;
+                modal.hide();
+                resolve(false);
+            };
+            acciones.appendChild(btnCancelar);
+        }
+
+        const btnConfirmar = document.createElement("button");
+        btnConfirmar.className = "btn btn-primary";
+        btnConfirmar.textContent = confirmarTexto;
+        btnConfirmar.onclick = () => {
+            cerradoSinAccion = false;
+            modal.hide();
+            resolve(true);
+        };
+        acciones.appendChild(btnConfirmar);
+
+        modalEl.addEventListener("hidden.bs.modal", () => {
+            if (cerradoSinAccion) resolve(false);
+        }, { once: true });
+
+        modal.show();
+    });
+}
+
+function obtenerMensajeError(errorData, mensajePorDefecto) {
+    if (!errorData || typeof errorData !== "object") return mensajePorDefecto;
+    if (typeof errorData.detail === "string" && errorData.detail.trim()) return errorData.detail;
+
+    const [campo, valor] = Object.entries(errorData)[0] || [];
+    if (Array.isArray(valor) && valor.length) return `${campo}: ${valor[0]}`;
+    if (typeof valor === "string" && valor.trim()) return `${campo}: ${valor}`;
+
+    return mensajePorDefecto;
 }
 
 // ================= CARGAR =================
@@ -491,7 +558,7 @@ async function crearLibro() {
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        alert(errorData.detail || JSON.stringify(errorData) || "No se pudo crear el libro.");
+        await mostrarVentanaSistema({ titulo: "Error al crear libro", mensaje: obtenerMensajeError(errorData, "No se pudo crear el libro."), confirmarTexto: "Entendido" });
         return;
     }
 
@@ -539,7 +606,14 @@ async function darBajaEjemplar(id) {
 }
 
 async function eliminarEjemplarDefinitivo(id) {
-    if (!confirm("¿Eliminar ejemplar definitivamente? Solo se permite si nunca fue prestado.")) return;
+    const confirmarEliminacion = await mostrarVentanaSistema({
+        titulo: "Confirmar eliminación",
+        mensaje: "¿Estás seguro? Se eliminará el ejemplar definitivamente (solo aplica si nunca fue prestado).",
+        confirmarTexto: "Sí, eliminar",
+        cancelarTexto: "Cancelar",
+        mostrarCancelar: true
+    });
+    if (!confirmarEliminacion) return;
 
     const response = await fetch(`${API}/ejemplares/${id}/eliminar_definitivo/`, {
         method: "DELETE",
@@ -553,7 +627,7 @@ async function eliminarEjemplarDefinitivo(id) {
         return;
     }
 
-    alert(data.detail || "Ejemplar eliminado correctamente.");
+    await mostrarVentanaSistema({ titulo: "Eliminación completada", mensaje: data.detail || "Se eliminó correctamente el ejemplar.", confirmarTexto: "Aceptar" });
     cargarEjemplares(libroActual);
     cargarLibros();
 }
