@@ -46,7 +46,11 @@ class LibroSerializer(serializers.ModelSerializer):
             nivel_asignado = (
                 nivel_asignado if nivel_asignado is not None else self.instance.nivel_asignado
             )
-
+        elif request and not request.user.is_superuser and nivel_asignado is None:
+            encargado = getattr(request.user, 'encargado', None)
+            if encargado:
+                nivel_asignado = encargado.nivel
+                
         if codigo_libro and nivel_asignado:
             queryset = Libro.objects.filter(
                 codigo_libro=codigo_libro,

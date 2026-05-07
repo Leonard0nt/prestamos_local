@@ -350,8 +350,14 @@ function obtenerMensajeError(errorData, mensajePorDefecto) {
     if (typeof errorData.detail === "string" && errorData.detail.trim()) return errorData.detail;
 
     const [campo, valor] = Object.entries(errorData)[0] || [];
-    if (Array.isArray(valor) && valor.length) return `${campo}: ${valor[0]}`;
-    if (typeof valor === "string" && valor.trim()) return `${campo}: ${valor}`;
+    if (Array.isArray(valor) && valor.length && typeof valor[0] === "string") return valor[0];
+    if (typeof valor === "string" && valor.trim()) return valor;
+
+    if (campo && typeof valor === "object" && valor !== null) {
+        const subvalor = Object.values(valor)[0];
+        if (Array.isArray(subvalor) && subvalor.length && typeof subvalor[0] === "string") return subvalor[0];
+        if (typeof subvalor === "string" && subvalor.trim()) return subvalor;
+    }
 
     return mensajePorDefecto;
 }
