@@ -72,3 +72,40 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Abrir {#MyAppName}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function DesinstalarVersionAnterior(): Boolean;
+var
+  UninstallString: string;
+  Resultado: Integer;
+begin
+  Result := True;
+
+  { Busca instalación previa por AppId (clave Inno Setup) }
+  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1', 'UninstallString', UninstallString) or
+     RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1', 'UninstallString', UninstallString) then
+  begin
+    if MsgBox('Se detectó una versión anterior de {#MyAppName}.\n\n¿Deseas desinstalarla ahora para continuar con la actualización?',
+      mbConfirmation, MB_YESNO) = IDYES then
+    begin
+      UninstallString := RemoveQuotes(UninstallString);
+      if not Exec(UninstallString, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, Resultado) then
+      begin
+        MsgBox('No se pudo ejecutar el desinstalador de la versión anterior. La instalación se cancelará.', mbCriticalError, MB_OK);
+        Result := False;
+      end
+      else if Resultado <> 0 then
+      begin
+        MsgBox('La desinstalación previa devolvió código ' + IntToStr(Resultado) + '. La instalación se cancelará.', mbCriticalError, MB_OK);
+        Result := False;
+      end;
+    end
+    else
+      Result := False;
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  Result := DesinstalarVersionAnterior();
+end;

@@ -180,6 +180,7 @@ thead, tbody, tr, td, th {
                     <th>Código</th>
                     <th>Fecha registro</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaEjemplares"></tbody>
@@ -404,6 +405,11 @@ async function cargarEjemplares(libro_id) {
                         ${renderEstadoOpciones(e.estado)}
                     </select>
                 </td>
+                <td>
+                    <button class="btn btn-outline-danger btn-sm" onclick="eliminarEjemplarDefinitivo(${e.id})">
+                        Eliminar
+                    </button>
+                </td>
             </tr>
         `;
     });
@@ -529,6 +535,26 @@ async function darBajaEjemplar(id) {
 
     alert(data.detail || "Ejemplar dado de baja correctamente.");
     cargarEjemplares(libroActual); 
+    cargarLibros();
+}
+
+async function eliminarEjemplarDefinitivo(id) {
+    if (!confirm("¿Eliminar ejemplar definitivamente? Solo se permite si nunca fue prestado.")) return;
+
+    const response = await fetch(`${API}/ejemplares/${id}/eliminar_definitivo/`, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: getCsrfHeaders()
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        alert(data.detail || "No se pudo eliminar el ejemplar.");
+        return;
+    }
+
+    alert(data.detail || "Ejemplar eliminado correctamente.");
+    cargarEjemplares(libroActual);
     cargarLibros();
 }
 

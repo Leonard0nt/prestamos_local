@@ -13,7 +13,7 @@ class Libro(models.Model):
     autor = models.CharField(max_length=100)
     editorial = models.CharField(max_length=100)
     fecha_registro = models.DateField()
-    codigo_libro = models.CharField(max_length=20, unique=True, blank=True)
+    codigo_libro = models.CharField(max_length=20, blank=True)
     nivel_asignado = models.CharField(max_length=10, choices=NIVELES, null=True, blank=True)
 
     encargado_agrego = models.ForeignKey(
@@ -23,6 +23,14 @@ class Libro(models.Model):
         blank=True,
         related_name='libros_agregados',
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['codigo_libro', 'nivel_asignado'],
+                name='unique_codigo_libro_por_nivel',
+            )
+        ]
 
     def __str__(self):
         return self.titulo

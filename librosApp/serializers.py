@@ -38,6 +38,32 @@ class LibroSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'nivel_asignado': 'Debes seleccionar un nivel (Basica o Media).'}
             )
+        codigo_libro = attrs.get('codigo_libro')
+        nivel_asignado = attrs.get('nivel_asignado')
+
+        if self.instance is not None:
+            codigo_libro = codigo_libro if codigo_libro is not None else self.instance.codigo_libro
+            nivel_asignado = (
+                nivel_asignado if nivel_asignado is not None else self.instance.nivel_asignado
+            )
+
+        if codigo_libro and nivel_asignado:
+            queryset = Libro.objects.filter(
+                codigo_libro=codigo_libro,
+                nivel_asignado=nivel_asignado,
+            )
+            if self.instance is not None:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+            if queryset.exists():
+                raise serializers.ValidationError(
+                    {
+                        'codigo_libro': (
+                            'Ya existe un libro con este código en el nivel seleccionado.'
+                        )
+                    }
+                )
+
         return attrs
 
 

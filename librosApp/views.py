@@ -207,3 +207,24 @@ class EjemplarViewSet(ModelViewSet):
             {'detail': 'Ejemplar dado de baja correctamente. Se conserva su historial.'},
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=['delete'])
+    def eliminar_definitivo(self, request, pk=None):
+        ejemplar = self.get_object()
+
+        if prestamo.objects.filter(ejemplar=ejemplar).exists():
+            return Response(
+                {
+                    'detail': (
+                        'No se puede eliminar este ejemplar porque tiene historial de '
+                        'préstamos.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ejemplar.delete()
+        return Response(
+            {'detail': 'Ejemplar eliminado correctamente.'},
+            status=status.HTTP_200_OK,
+        )
