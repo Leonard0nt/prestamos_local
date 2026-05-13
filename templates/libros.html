@@ -71,6 +71,13 @@ thead, tbody, tr, td, th {
     justify-content: center;
     text-align: center;
     white-space: normal;
+    width: 100%;
+}
+
+.acciones-contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 }
 </style>
 <body style="background-color: #f1f3f5;">
@@ -434,7 +441,7 @@ function renderizarTablaLibros() {
                     </button>
                 </td>
                 <td>
-                    <div class="d-flex flex-nowrap gap-2 align-items-center">
+                    <div class="acciones-contenedor">
                         <button class="btn btn-warning btn-sm btn-accion-libro" onclick='abrirEditar(${JSON.stringify(l)})'>
                             Editar
                         </button>

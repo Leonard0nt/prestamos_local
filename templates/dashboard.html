@@ -28,6 +28,20 @@
         background-color: #212529;
         z-index: 2;
     }
+
+    .acciones-contenedor {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .btn-accion-prestamo {
+        width: 100%;
+        min-height: 38px;
+        font-size: 0.95rem;
+        line-height: 1.1;
+        white-space: normal;
+    }
 </style>
 
 <body style="background-color: #f1f3f5;">
@@ -306,15 +320,17 @@ async function cargarEjemplaresLibro() {
                 <td>${badgeEstado(p.estado)}</td>
                 <td>${p.dias_atraso}</td>
                 ${ES_VISTA_ARCHIVADOS ? "" : `
-                    <td class="d-flex gap-2 align-items-center">
-                        <button class="btn btn-success btn-sm"
+                    <td>
+                        <div class="acciones-contenedor">
+                        <button class="btn btn-success btn-sm btn-accion-prestamo"
                             onclick="devolver(${p.id})">
                             Devolver
                         </button>
-                        <button class="btn btn-danger btn-sm"
+                        <button class="btn btn-danger btn-sm btn-accion-prestamo"
                             onclick="eliminarPrestamo(${p.id})">
                             Archivar
                         </button>
+                        </div>
                     </td>
                 `}
             </tr>
