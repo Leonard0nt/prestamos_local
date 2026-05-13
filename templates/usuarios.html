@@ -9,6 +9,29 @@
 <style>
 .table {
     border-collapse: collapse !important;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.col-email {
+    max-width: 260px;
+}
+
+.col-acciones {
+    width: 140px;
+}
+
+.acciones-contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 }
 
 thead th {
@@ -49,10 +72,10 @@ thead th {
                     <th>Nivel</th>
                     {% endif %}
                     <th>Curso</th>
-                    <th>Email</th>
+                    <th class="col-email">Email</th>
                     <th>RUT</th>
                     <th>Teléfono</th>
-                    <th>Acciones</th>
+                    <th class="col-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaUsuarios"></tbody>
@@ -362,10 +385,11 @@ function renderizarTablaUsuarios() {
                 <td>${u.nombre}</td>
                 ${ES_ADMIN ? `<td>${u.nivel_pertenencia || "-"}</td>` : ""}
                 <td>${u.curso || ""}</td>
-                <td>${u.email}</td>
-                <td>${u.rut}</td>
-                <td>${u.telefono}</td>
-                <td>
+                <td class="col-email" title="${u.email}">${u.email}</td>
+                <td title="${u.rut}">${u.rut}</td>
+                <td title="${u.telefono}">${u.telefono}</td>
+                <td class="col-acciones">
+                    <div class="acciones-contenedor">
                     <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(u)})'>
                         Editar
                     </button>
@@ -377,6 +401,7 @@ function renderizarTablaUsuarios() {
                                 <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${u.id})">Eliminar</button>
                             `
                     }
+                    </div>
                 </td>
             </tr>
         `;
