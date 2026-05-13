@@ -25,6 +25,16 @@ thead th {
     background-color: #212529;
     z-index: 2;
 }
+
+.acciones-encargado {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.acciones-encargado .btn {
+    width: 150px;
+}
 </style>
 <body style="background-color: #f1f3f5;">
 
@@ -327,15 +337,17 @@ function renderizarTablaEncargados() {
                 <td>${e.nivel === "MEDIA" ? "Media" : "Basica"}</td>
                 <td>${new Date(e.creado_en).toLocaleDateString()}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(e)})'>
-                        Editar
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="reestablecerCuentaEncargado(${e.id})">
-                        Reestablecer cuenta
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="eliminarEncargado(${e.id})">
-                        Eliminar
-                    </button>
+                    <div class="acciones-encargado">
+                        <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(e)})'>
+                            Editar
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="reestablecerCuentaEncargado(${e.id})">
+                            Reestablecer cuenta
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarEncargado(${e.id})">
+                            Eliminar
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
