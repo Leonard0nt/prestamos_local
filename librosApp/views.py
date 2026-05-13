@@ -14,7 +14,7 @@ from .serializers import EjemplarSerializer, LibroSerializer
 
 
 class LibroViewSet(ModelViewSet):
-    queryset = Libro.objects.all()
+    queryset = Libro.objects.select_related('encargado_agrego')
     serializer_class = LibroSerializer
 
     def get_queryset(self):
@@ -78,8 +78,6 @@ class LibroViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        nuevos = []
-
         # obtener último código existente
         ultimo = Ejemplar.objects.filter(libro=libro).order_by('-id').first()
 
@@ -88,14 +86,14 @@ class LibroViewSet(ModelViewSet):
         else:
             ultimo_num = 0
 
-        for i in range(1, cantidad + 1):
-            codigo = f"{libro.codigo_libro}-{ultimo_num + i}"
-
-            ejemplar = Ejemplar.objects.create(
+        nuevos = [
+            Ejemplar(
                 libro=libro,
-                codigo=codigo,
+                codigo=f"{libro.codigo_libro}-{ultimo_num + i}",
             )
-            nuevos.append(ejemplar)
+            for i in range(1, cantidad + 1)
+        ]
+        Ejemplar.objects.bulk_create(nuevos)
 
         serializer = EjemplarSerializer(nuevos, many=True)
 

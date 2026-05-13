@@ -13,7 +13,13 @@ from .models import prestamo
 from .serializers import PrestamoSerializer
 
 class PrestamoViewSet(viewsets.ModelViewSet):
-    queryset = prestamo.objects.all()
+    queryset = prestamo.objects.select_related(
+        'ejemplar',
+        'ejemplar__libro',
+        'usuario',
+        'encargado_agrego',
+        'encargado_agrego__user',
+    )
     serializer_class = PrestamoSerializer
 
     @staticmethod
@@ -75,7 +81,7 @@ class PrestamoViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = prestamo.objects.filter(activo=True)
+        queryset = self.queryset.filter(activo=True)
 
         if not self.request.user.is_superuser:
             encargado = getattr(self.request.user, 'encargado', None)
@@ -93,11 +99,15 @@ class PrestamoViewSet(viewsets.ModelViewSet):
 
         hoy = date.today()
 
+        prestamos_a_actualizar = []
         for p in queryset:
             if p.estado == 'P' and hoy > p.fecha_devolucion:
                 p.estado = 'A'
                 p.dias_atraso = (hoy - p.fecha_devolucion).days
-                p.save()
+                prestamos_a_actualizar.append(p)
+
+        if prestamos_a_actualizar:
+            prestamo.objects.bulk_update(prestamos_a_actualizar, ['estado', 'dias_atraso'])
 
         return queryset
 
