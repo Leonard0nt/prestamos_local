@@ -127,7 +127,50 @@
         color: #fff;
     }
 
-    @media (max-width: 768px) {
+    
+
+    body.app-page {
+        background-color: #f1f3f5;
+        transition: background-color .2s ease, color .2s ease;
+    }
+
+    body.dark-mode {
+        background-color: #121821 !important;
+        color: #e6edf5;
+    }
+
+    body.dark-mode .app-shell {
+        background: #1a2230;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45);
+    }
+
+    body.dark-mode .app-shell .tabs {
+        background-color: #253042;
+        border-bottom-color: #33445d;
+    }
+
+    body.dark-mode .app-shell .tab-link { color: #d9e6f5; }
+    body.dark-mode .app-shell .tab-link:hover { background-color: #2d3b52; color: #7fc0ff; }
+    body.dark-mode .app-shell .tab-link.active { background-color: #31445d; color: #9fd0ff; }
+    body.dark-mode .bg-white {
+        background-color: #1a2230 !important;
+        color: #e6edf5;
+    }
+
+    body.dark-mode .table { color: #e6edf5; }
+    body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+        --bs-table-accent-bg: rgba(255, 255, 255, 0.04);
+        color: #e6edf5;
+    }
+    body.dark-mode .form-control,
+    body.dark-mode .form-select,
+    body.dark-mode .modal-content {
+        background-color: #111925;
+        color: #e6edf5;
+        border-color: #33445d;
+    }
+    body.dark-mode .form-control::placeholder { color: #9fb1c7; }
+@media (max-width: 768px) {
         .app-shell .tabs,
         .app-shell .tabs.tabs-admin,
         .app-shell .tabs.tabs-encargado {
@@ -138,9 +181,10 @@
 
 <div class="app-shell">
     <header class="hero">
-        <button class="settings-btn" type="button" data-bs-toggle="modal" data-bs-target="#modalConfiguracionCuenta" title="Configurar cuenta">
-            ⚙️
-        </button>
+        <div class="d-flex gap-2" style="position:absolute; top:12px; right:14px;">
+            <button class="settings-btn" id="toggleDarkMode" type="button" title="Cambiar modo oscuro">🌙</button>
+            <button class="settings-btn" type="button" data-bs-toggle="modal" data-bs-target="#modalConfiguracionCuenta" title="Configurar cuenta">⚙️</button>
+        </div>
         <h1>📚 Sistema de Prestamos para Biblioteca</h1>
         <small class="d-block mt-2">Rol: {% if request.user.is_superuser %}Administrador{% else %}Encargado{% endif %}</small>
         <small class="d-block">Nivel: {% if request.user.is_superuser %}Administración{% else %}{{ request.user.encargado.get_nivel_display|default:"No definido" }}{% endif %}</small>
@@ -225,6 +269,34 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function configurarModoOscuro() {
+        const modoGuardado = localStorage.getItem('modoOscuro');
+        if (modoGuardado === 'true') document.body.classList.add('dark-mode');
+
+        function actualizarBoton() {
+            const boton = document.getElementById('toggleDarkMode');
+            if (!boton) return;
+            const activo = document.body.classList.contains('dark-mode');
+            boton.textContent = activo ? '☀️' : '🌙';
+            boton.setAttribute('aria-label', activo ? 'Activar modo claro' : 'Activar modo oscuro');
+            boton.title = activo ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const boton = document.getElementById('toggleDarkMode');
+            if (boton) {
+                boton.addEventListener('click', function () {
+                    document.body.classList.toggle('dark-mode');
+                    localStorage.setItem('modoOscuro', document.body.classList.contains('dark-mode'));
+                    actualizarBoton();
+                });
+            }
+            actualizarBoton();
+        });
+    })();
+</script>
 
 <script>
     (function configurarRecuperacionConexion() {

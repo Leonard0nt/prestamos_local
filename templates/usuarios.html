@@ -41,7 +41,7 @@ thead th {
     z-index: 2;
 }
 </style>
-<body style="background-color: #f1f3f5;">
+<body class="app-page">
 
     {% include 'partials/app_menu.html' with active=active_tab|default:'usuarios' %}
     <form style="display:none;">{% csrf_token %}</form>
