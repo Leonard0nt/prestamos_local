@@ -13,10 +13,14 @@ class LibroSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_cantidad_ejemplares(self, obj):
+        if hasattr(obj, 'cantidad_ejemplares'):
+            return obj.cantidad_ejemplares
         return obj.ejemplar_set.count()
 
     def get_cantidad_disponibles(self, obj):
-        return obj.ejemplar_set.filter(estado='disponible').count()
+        if hasattr(obj, 'cantidad_disponibles'):
+            return obj.cantidad_disponibles
+        return obj.ejemplar_set.filter(estado=Ejemplar.ESTADO_DISPONIBLE).count()
 
     def get_nivel_pertenencia(self, obj):
         if obj.nivel_asignado == Libro.NIVEL_MEDIA:

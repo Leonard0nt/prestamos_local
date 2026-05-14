@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
 from rest_framework import status
 from rest_framework.decorators import action
@@ -18,7 +18,10 @@ class LibroViewSet(ModelViewSet):
     serializer_class = LibroSerializer
 
     def get_queryset(self):
-        queryset = Libro.objects.all()
+        queryset = Libro.objects.annotate(
+            cantidad_ejemplares=Count('ejemplar'),
+            cantidad_disponibles=Count('ejemplar', filter=Q(ejemplar__estado=Ejemplar.ESTADO_DISPONIBLE)),
+        ).select_related('encargado_agrego')
         if self.request.user.is_superuser:
             return queryset
 

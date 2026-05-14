@@ -16,7 +16,9 @@ class PrestamoViewSet(viewsets.ModelViewSet):
     queryset = prestamo.objects.select_related(
         'ejemplar',
         'ejemplar__libro',
+        'ejemplar__libro__encargado_agrego',
         'usuario',
+        'usuario__encargado_agrego',
         'encargado_agrego',
         'encargado_agrego__user',
     )
@@ -35,7 +37,7 @@ class PrestamoViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def historial(self, request):
-        historial = prestamo.objects.filter(activo=False)
+        historial = self.queryset.filter(activo=False)
         if not request.user.is_superuser:
             encargado = getattr(request.user, 'encargado', None)
             if encargado:

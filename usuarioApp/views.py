@@ -112,7 +112,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     serializer_class = UsuarioSerializer
 
     def get_queryset(self):
-        queryset = usuario.objects.all()
+        queryset = usuario.objects.select_related('encargado_agrego')
         vista = self.request.query_params.get('vista', 'activos')
         vista = vista if vista in {'activos', 'baja'} else 'activos'
 
@@ -194,7 +194,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         )
 
 class EncargadoBibliotecaViewSet(viewsets.ModelViewSet):
-    queryset = EncargadoBiblioteca.objects.all()
+    queryset = EncargadoBiblioteca.objects.select_related('user')
     serializer_class = EncargadoBibliotecaSerializer
     permission_classes = [permissions.IsAdminUser]
 
