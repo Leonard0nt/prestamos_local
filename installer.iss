@@ -5,7 +5,7 @@
 ;   2) Compila este script desde Inno Setup Compiler.
 
 #define MyAppName "PrestamosBibliotecaCSF"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "Prestamos Biblioteca"
 #define MyAppExeName "PrestamosBibliotecaCSF.exe"
 #define MyAppIcon "assets\prestamos_csfv2.ico"

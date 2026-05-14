@@ -257,7 +257,7 @@ const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
 const ENCARGADO_NIVEL = "{{ encargado_nivel|default:'' }}".toUpperCase().trim();
 const USUARIOS_VISTA = "{{ usuarios_vista|default:'activos' }}";
 const REGISTROS_POR_PAGINA = 20;
-const REFRESH_INTERVAL_MS = 5000;
+const REFRESH_INTERVAL_MS = 15000;
 
 function confirmarSistema(mensaje) {
     const modalEl = document.getElementById("modalConfirmacionSistema");
@@ -379,8 +379,9 @@ function renderizarTablaUsuarios() {
         tabla.innerHTML = `<tr><td colspan="${columnas}" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
+    let filasHtml = "";
     paginaData.forEach(u => {
-        tabla.innerHTML += `
+        filasHtml += `
             <tr>
                 <td>${u.nombre}</td>
                 ${ES_ADMIN ? `<td>${u.nivel_pertenencia || "-"}</td>` : ""}
@@ -406,6 +407,7 @@ function renderizarTablaUsuarios() {
             </tr>
         `;
     });
+    if (filasHtml) tabla.innerHTML = filasHtml;
 
     renderizarPaginacionUsuarios(totalPaginas);
 }
@@ -413,14 +415,16 @@ function renderizarTablaUsuarios() {
 function renderizarPaginacionUsuarios(totalPaginas) {
     const paginacion = document.getElementById("paginacionUsuarios");
     paginacion.innerHTML = "";
+    let paginacionHtml = "";
 
     for (let pagina = 1; pagina <= totalPaginas; pagina++) {
-        paginacion.innerHTML += `
+        paginacionHtml += `
             <li class="page-item ${pagina === usuariosPaginaActual ? "active" : ""}">
                 <button class="page-link" type="button" onclick="irPaginaUsuarios(${pagina})">${pagina}</button>
             </li>
         `;
     }
+    paginacion.innerHTML = paginacionHtml;
 }
 
 function irPaginaUsuarios(pagina) {

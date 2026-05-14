@@ -288,7 +288,7 @@ thead, tbody, tr, td, th {
 const API = window.location.origin;
 const ES_ADMIN = {{ request.user.is_superuser|yesno:"true,false" }};
 const REGISTROS_POR_PAGINA = 20;
-const REFRESH_INTERVAL_MS = 10000;
+const REFRESH_INTERVAL_MS = 15000;
 let librosData = [];
 let librosPaginaActual = 1;
 let librosAutoRefreshId = null;
@@ -425,8 +425,9 @@ function renderizarTablaLibros() {
         tabla.innerHTML = `<tr><td colspan="${columnas}" class="text-center text-muted">Sin resultados.</td></tr>`;
     }
 
+    let filasHtml = "";
     paginaData.forEach(l => {
-        tabla.innerHTML += `
+        filasHtml += `
             <tr>
                 <td>${l.titulo}</td>
                 ${ES_ADMIN ? `<td>${l.nivel_pertenencia || "-"}</td>` : ""}
@@ -453,6 +454,7 @@ function renderizarTablaLibros() {
             </tr>
         `;
     });
+    if (filasHtml) tabla.innerHTML = filasHtml;
 
     renderizarPaginacionLibros(totalPaginas);
 }
@@ -460,14 +462,16 @@ function renderizarTablaLibros() {
 function renderizarPaginacionLibros(totalPaginas) {
     const paginacion = document.getElementById("paginacionLibros");
     paginacion.innerHTML = "";
+    let paginacionHtml = "";
 
     for (let pagina = 1; pagina <= totalPaginas; pagina++) {
-        paginacion.innerHTML += `
+        paginacionHtml += `
             <li class="page-item ${pagina === librosPaginaActual ? "active" : ""}">
                 <button class="page-link" type="button" onclick="irPaginaLibros(${pagina})">${pagina}</button>
             </li>
         `;
     }
+    paginacion.innerHTML = paginacionHtml;
 }
 
 function irPaginaLibros(pagina) {

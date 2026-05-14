@@ -183,7 +183,7 @@
         const btnConfirmarArchivoPrestamo = document.getElementById("btnConfirmarArchivoPrestamo");
 
         const REGISTROS_POR_PAGINA = 20;
-        const INTERVALO_ACTUALIZACION_MS = 5000;
+        const INTERVALO_ACTUALIZACION_MS = 15000;
         let prestamosData = [];
         let usuariosData = [];
         let prestamosPaginaActual = 1;
@@ -303,8 +303,9 @@ async function cargarEjemplaresLibro() {
                 tabla.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted">Sin resultados.</td></tr>`;
             }
 
+            let filasHtml = "";
             paginaData.forEach(p => {
-                tabla.innerHTML += `
+                filasHtml += `
             <tr>
                 <td>
                     <button class="btn btn-link btn-sm p-0 text-decoration-none"
@@ -336,7 +337,7 @@ async function cargarEjemplaresLibro() {
             </tr>
         `;
             });
-
+            if (filasHtml) tabla.innerHTML = filasHtml;
             renderizarPaginacionPrestamos(totalPaginas);
         }
 
@@ -372,13 +373,16 @@ async function cargarEjemplaresLibro() {
             const paginacion = document.getElementById("paginacionPrestamos");
             paginacion.innerHTML = "";
 
+            let paginacionHtml = "";
             for (let pagina = 1; pagina <= totalPaginas; pagina++) {
-                paginacion.innerHTML += `
+                paginacionHtml += `
+
                     <li class="page-item ${pagina === prestamosPaginaActual ? "active" : ""}">
                         <button class="page-link" type="button" onclick="irPaginaPrestamos(${pagina})">${pagina}</button>
                     </li>
                 `;
             }
+            paginacion.innerHTML = paginacionHtml;
         }
 
         function irPaginaPrestamos(pagina) {
