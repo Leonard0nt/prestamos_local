@@ -3,21 +3,21 @@
 Launcher de escritorio (pywebview) para la app Django del repositorio.
 
 Flujo:
-1) Inicia Django en segundo plano (manage.py runserver).
+1) Inicia Django en segundo plano usando Waitress.
 2) Espera a que el servidor responda.
 3) Abre una ventana nativa apuntando a /login/.
 4) Al cerrar la ventana, termina el servidor Django.
+
+Recomendado para:
+- Ejecución normal desde VSCode / terminal.
+- Ejecución empaquetada con PyInstaller.
 """
 
 from __future__ import annotations
 
-import atexit
 import ctypes
 import os
-import shutil
-import signal
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -25,38 +25,51 @@ from pathlib import Path
 
 import webview
 
+
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = 8765
 START_PATH = "/login/"
 WINDOW_TITLE = "PrestamosBibliotecaCSF"
 START_TIMEOUT_SECONDS = 25
 WINDOW_WIDTH = 1165
 WINDOW_HEIGHT = 668
 
+
 def _is_frozen() -> bool:
+    """
+    Detecta si el programa está corriendo como ejecutable creado por PyInstaller.
+    """
     return bool(getattr(sys, "frozen", False))
 
 
 def _runtime_base_dir() -> Path:
     """
     Directorio base de ejecución.
-    - Script normal: carpeta de desktop_app.py
-    - PyInstaller: carpeta donde está el .exe
+
+    - Script normal:
+      carpeta donde está este archivo .py
+
+    - PyInstaller:
+      carpeta donde está el .exe
     """
     if _is_frozen():
         return Path(sys.executable).resolve().parent
+
     return Path(__file__).resolve().parent
 
 
 def _find_project_root() -> Path | None:
     """
-    Intenta ubicar la raíz del proyecto buscando `manage.py`.
+    Intenta ubicar la raíz del proyecto buscando manage.py.
+
     Cubre casos:
-    - ejecución directa desde repo
-    - ejecución de .exe desde ./dist
+    - ejecución directa desde el repositorio
+    - ejecución desde dist/
+    - ejecución desde dist/nombre_app/
     - cwd distinto al del ejecutable
     """
     base = _runtime_base_dir()
+
     candidates = [
         Path.cwd().resolve(),
         base,
@@ -65,221 +78,225 @@ def _find_project_root() -> Path | None:
     ]
 
     visited: set[Path] = set()
+
     for candidate in candidates:
         if candidate in visited:
             continue
+
         visited.add(candidate)
+
         if (candidate / "manage.py").exists():
             return candidate
 
     return None
 
 
-def _python_executable() -> str:
-    # Script normal: respeta venv activo.
-    if not _is_frozen():
-        return sys.executable
-
-    # PyInstaller: sys.executable apunta al .exe, no al intérprete Python.
-    explicit = os.environ.get("PYTHON_EXECUTABLE")
-    if explicit:
-        return explicit
-
-    for candidate in ("python", "python3", "py"):
-        resolved = shutil.which(candidate)
-        if resolved:
-            return resolved
-
-    # Fallback final; el error real aparecerá en el arranque del subprocess.
-    return sys.executable
-
-
 def _wait_for_port(host: str, port: int, timeout_seconds: int) -> bool:
+    """
+    Espera hasta que el servidor local esté escuchando en el puerto indicado.
+    """
     deadline = time.time() + timeout_seconds
+
     while time.time() < deadline:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(0.5)
+
             if sock.connect_ex((host, port)) == 0:
                 return True
+
         time.sleep(0.25)
+
     return False
 
 
 def _load_env_file(env_file: Path) -> None:
+    """
+    Carga variables desde un archivo .env simple.
+
+    Formato esperado:
+    CLAVE=valor
+
+    También acepta:
+    CLAVE="valor"
+    CLAVE='valor'
+    """
     if not env_file.exists():
         return
 
     for raw_line in env_file.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+
+        if not line:
             continue
+
+        if line.startswith("#"):
+            continue
+
+        if "=" not in line:
+            continue
+
         key, value = line.split("=", 1)
+
         key = key.strip()
         value = value.strip().strip('"').strip("'")
+
         if key and key not in os.environ:
             os.environ[key] = value
 
 
-def _terminate_process(process: subprocess.Popen[bytes] | subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        return
-
-    if os.name == "nt":
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-        return
-
-    process.send_signal(signal.SIGTERM)
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
-
-
-def _start_embedded_django_server(root: Path):
+def _write_log(message: str) -> None:
     """
-    Inicia Django dentro del mismo proceso (sin depender de Python del sistema).
-    Ideal para ejecutables PyInstaller en PCs donde no hay Python instalado.
+    Escribe logs simples en desktop_app.log, junto al .exe o junto al script.
     """
-    _load_env_file(root / ".env")
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "prestamos_biblioteca.settings")
-
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-
     try:
-        import django
-        from django.core.wsgi import get_wsgi_application
-    except Exception as exc:
-        raise RuntimeError(f"No se pudo importar Django embebido: {exc}") from exc
+        logfile = _runtime_base_dir() / "desktop_app.log"
 
-    django.setup()
-    application = get_wsgi_application()
+        with logfile.open("a", encoding="utf-8") as fh:
+            fh.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}\n")
 
-    try:
-        from waitress.server import create_server
-
-        waitress_server = create_server(application, host=HOST, port=PORT, threads=8)
-        server_thread = threading.Thread(target=waitress_server.run, daemon=True)
-        server_thread.start()
-        _write_log("Servidor embebido iniciado con Waitress.")
-        return {"type": "waitress", "server": waitress_server}
-    except Exception as exc:
-        _write_log(f"No se pudo iniciar Waitress, se usará wsgiref. Detalle: {exc}")
-        from wsgiref.simple_server import make_server
-
-        httpd = make_server(HOST, PORT, application)
-        server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-        server_thread.start()
-        _write_log("Servidor embebido iniciado con wsgiref (fallback).")
-        return {"type": "wsgiref", "server": httpd}
-
-
-def _stop_embedded_django_server(server_handle) -> None:
-    if not server_handle:
-        return
-
-    server_type = server_handle.get("type")
-    server = server_handle.get("server")
-
-    if server_type == "waitress":
-        server.close()
-        return
-
-    server.shutdown()
-    server.server_close()
+    except Exception:
+        # No detenemos la app si falla el log.
+        pass
 
 
 def _show_error(message: str, title: str = "Desktop App Error") -> None:
+    """
+    Muestra un error visual en Windows.
+    Si falla, imprime por consola.
+    """
     if os.name == "nt":
         try:
             ctypes.windll.user32.MessageBoxW(0, message, title, 0x10)
             return
         except Exception:
             pass
+
     print(message, file=sys.stderr)
 
 
-def _write_log(message: str) -> None:
+def _start_embedded_django_server(root: Path):
+    """
+    Inicia Django dentro del mismo proceso usando Waitress.
+
+    Ventaja:
+    - No depende de ejecutar manage.py runserver.
+    - No necesita abrir un segundo proceso Python.
+    - Funciona mejor para apps empaquetadas con PyInstaller.
+    """
+    _load_env_file(root / ".env")
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "prestamos_biblioteca.settings")
+
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+
     try:
-        logfile = _runtime_base_dir() / "desktop_app.log"
-        with logfile.open("a", encoding="utf-8") as fh:
-            fh.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}\n")
-    except Exception:
-        # Evita romper el flujo por problemas de logging.
-        pass
+        from django.core.wsgi import get_wsgi_application
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo importar Django: {exc}") from exc
+
+    try:
+        application = get_wsgi_application()
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo cargar la aplicación WSGI de Django: {exc}") from exc
+
+    try:
+        from waitress.server import create_server
+    except Exception as exc:
+        raise RuntimeError(
+            "No se pudo importar Waitress. "
+            "Instala la dependencia con: pip install waitress"
+        ) from exc
+
+    try:
+        waitress_server = create_server(
+            application,
+            host=HOST,
+            port=PORT,
+            threads=8,
+        )
+
+        server_thread = threading.Thread(
+            target=waitress_server.run,
+            daemon=True,
+        )
+
+        server_thread.start()
+
+        _write_log(f"Servidor Django iniciado con Waitress en http://{HOST}:{PORT}")
+
+        return {
+            "type": "waitress",
+            "server": waitress_server,
+            "thread": server_thread,
+        }
+
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo iniciar Waitress: {exc}") from exc
+
+
+def _stop_embedded_django_server(server_handle) -> None:
+    """
+    Detiene el servidor Waitress cuando se cierra la ventana.
+    """
+    if not server_handle:
+        return
+
+    server = server_handle.get("server")
+
+    if server is None:
+        return
+
+    try:
+        server.close()
+        _write_log("Servidor Django detenido correctamente.")
+    except Exception as exc:
+        _write_log(f"No se pudo detener correctamente el servidor: {exc}")
 
 
 def main() -> int:
     root = _find_project_root()
+
     if root is None:
         message = (
             "No se encontró manage.py.\n\n"
-            "Si ejecutas el .exe desde /dist, verifica que la carpeta del proyecto "
-            "contenga manage.py en el directorio padre."
+            "Verifica que este archivo o el .exe estén ubicados dentro del proyecto "
+            "o en una carpeta cercana a manage.py."
         )
         _write_log(message)
         _show_error(message)
         return 1
 
-    _write_log(f"Raíz detectada: {root}")
+    _write_log(f"Raíz del proyecto detectada: {root}")
 
-    process = None
     embedded_server = None
 
-    if _is_frozen():
-        try:
-            embedded_server = _start_embedded_django_server(root)
-        except Exception as exc:
-            error_message = (
-                "No fue posible iniciar Django embebido.\n\n"
-                "Revisa desktop_app.log para más detalles."
-            )
-            _write_log(error_message)
-            _write_log(str(exc))
-            _show_error(error_message)
-            return 1
-    else:
-        manage_py = root / "manage.py"
-        runserver_cmd = [
-            _python_executable(),
-            str(manage_py),
-            "runserver",
-            f"{HOST}:{PORT}",
-        ]
-
-        process = subprocess.Popen(
-            runserver_cmd,
-            cwd=str(root),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True,
+    try:
+        embedded_server = _start_embedded_django_server(root)
+    except Exception as exc:
+        error_message = (
+            "No fue posible iniciar Django con Waitress.\n\n"
+            "Revisa el archivo desktop_app.log para más detalles."
         )
-        atexit.register(_terminate_process, process)
+
+        _write_log(error_message)
+        _write_log(str(exc))
+        _show_error(error_message)
+
+        return 1
 
     if not _wait_for_port(HOST, PORT, START_TIMEOUT_SECONDS):
-        if process is not None:
-            _terminate_process(process)
         if embedded_server is not None:
             _stop_embedded_django_server(embedded_server)
 
-        stderr_output = ""
-        if process is not None and process.stderr is not None:
-            try:
-                stderr_output = process.stderr.read()
-            except Exception:
-                stderr_output = ""
         error_message = (
             "No fue posible iniciar Django dentro del tiempo esperado.\n\n"
             "Revisa el archivo desktop_app.log para más detalles."
         )
+
         _write_log(error_message)
-        if stderr_output.strip():
-            _write_log(stderr_output.strip())
         _show_error(error_message)
+
         return 1
 
     webview.create_window(
@@ -291,14 +308,14 @@ def main() -> int:
     )
 
     try:
-        webview.start()
+        webview.start(gui="edgechromium", debug=False)
     finally:
-        if process is not None:
-            _terminate_process(process)
         if embedded_server is not None:
             _stop_embedded_django_server(embedded_server)
+
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
