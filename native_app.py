@@ -29,31 +29,49 @@ def main():
 
     from desktop_native.window import LibraryWindow, LoginDialog
 
-    from PySide6.QtCore import QEventLoop
+    from PySide6.QtCore import QTimer
 
-    while True:
-        login = LoginDialog()
-        if login.exec() != QDialog.DialogCode.Accepted:
-            return 0
+    login = None
+    window = None
+    signed_out = False
 
-        window = LibraryWindow(login.account)
-        loop = QEventLoop()
+    def show_login():
+        nonlocal login, signed_out
         signed_out = False
+        login = LoginDialog()
+        login.finished.connect(login_finished)
+        login.open()
 
-        def logout():
-            nonlocal signed_out
-            signed_out = True
-            window.close()
+    def login_finished(result):
+        nonlocal login, window
+        account = login.account
+        login.deleteLater()
+        login = None
+        if result != QDialog.DialogCode.Accepted:
+            app.quit()
+            return
 
+        window = LibraryWindow(account)
         window.logout_requested.connect(logout)
-        window.closed.connect(loop.quit)
+        window.closed.connect(window_closed)
         window.show()
-        loop.exec()
-        window.closed.disconnect(loop.quit)
-        window.logout_requested.disconnect(logout)
+
+    def logout():
+        nonlocal signed_out
+        signed_out = True
+        window.close()
+
+    def window_closed():
+        nonlocal window
         window.deleteLater()
-        if not signed_out:
-            return 0
+        window = None
+        if signed_out:
+            QTimer.singleShot(0, show_login)
+        else:
+            app.quit()
+
+    show_login()
+    return app.exec()
 
 
 if __name__ == "__main__":
