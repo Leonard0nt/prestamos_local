@@ -218,4 +218,4 @@ Este repositorio corresponde a una aplicación Django funcional orientada a uso 
 
 ## Edición de escritorio con PySide6
 
-El prototipo nativo usa el ORM de Django desde una ventana Qt con SQLite local o PostgreSQL. Consulta la [guía para Windows y Arch Linux](packaging/README.md).
+La edición PySide6 reutiliza las pantallas de Django dentro de Qt sin abrir un servidor HTTP local. Puede usar SQLite local o PostgreSQL. Consulta la [guía para Windows y Arch Linux](packaging/README.md).

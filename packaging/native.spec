@@ -25,6 +25,10 @@ analysis = Analysis(
     [str(root / "native_app.py")],
     pathex=[str(root)],
     hiddenimports=hidden,
+    datas=[
+        (str(root / "templates"), "templates"),
+        (str(root / "desktop_native" / "web_assets"), "desktop_native/web_assets"),
+    ],
 )
 pyz = PYZ(analysis.pure)
 name = "PrestamosBibliotecaCSF-Nativo"

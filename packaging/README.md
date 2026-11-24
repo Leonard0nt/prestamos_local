@@ -1,8 +1,17 @@
 # Préstamos Biblioteca CSF en PySide6
 
-Este prototipo abre ventanas nativas y usa los modelos de Django con SQLite local o PostgreSQL. Puedes iniciar sesión con una cuenta existente y navegar entre Libros, Préstamos y Alumnos. La edición nativa permite consultar préstamos activos y archivados y registrar un préstamo desde su propio diálogo. Para devoluciones y administración del catálogo, alumnos o encargados, sigue usando la edición web.
+La edición de escritorio abre **las mismas pantallas de Django** en una
+ventana PySide6 con Qt WebEngine. Incluye los formularios y permisos de
+la app original para libros, ejemplares, préstamos, devoluciones,
+alumnos y encargados, además de la configuración de cuenta y el modo oscuro.
 
-El cliente usa el ORM de Django directamente, sin servidor HTTP, Waitress ni WebView2.
+La ventana pasa las solicitudes a Django dentro del proceso mediante
+Qt WebChannel. No abre un puerto local ni usa Waitress. Bootstrap se distribuye
+con la aplicación para que la interfaz cargue sin conexión a internet.
+
+Para usar menos memoria, puedes arrancar `python native_app.py --ligero` o
+añadir `--ligero` al acceso directo. Esa vista de widgets Qt cubre la consulta y
+el registro de préstamos. El inicio habitual abre la interfaz completa.
 
 ## Probar en un solo PC con SQLite
 
@@ -15,8 +24,10 @@ python native_app.py
 ```
 
 El script aplica las migraciones, pide crear la primera cuenta y agrega un
-libro y un lector ficticios. Para probar un préstamo, abre **Préstamos → Nuevo préstamo**, busca **El libro
-de prueba** y **Lector de prueba**, selecciona **Básica** y registra el préstamo.
+libro y un lector ficticios. Entra con la cuenta creada, abre **Préstamos → Préstamos activos → Nuevo
+préstamo** y selecciona **El libro de prueba**, su ejemplar, **Lector de
+prueba** y el nivel **Básica**. Desde la misma página puedes devolver o
+archivar ese préstamo.
 Puedes omitir `--demo` si quieres partir con el catálogo vacío.
 
 El archivo `prestamos.sqlite3` queda en la misma carpeta que la configuración
@@ -36,7 +47,7 @@ Para usar PostgreSQL en lugar de SQLite, copia `packaging/native.env.example` co
 | Windows | `%LOCALAPPDATA%\prestamos-biblioteca\.env` |
 | Arch Linux | `${XDG_CONFIG_HOME:-$HOME/.config}/prestamos-biblioteca/.env` |
 
-Utiliza una cuenta de PostgreSQL autorizada para esta base. El instalador distribuye un ejemplo vacío y el cliente lee la configuración de cada equipo. Para probar desde el código puedes usar la misma configuración o exportar las variables de conexión antes de ejecutar `python native_app.py`.
+Utiliza una cuenta de PostgreSQL autorizada para la base y las operaciones que vas a realizar. El instalador distribuye un ejemplo vacío y el cliente lee la configuración de cada equipo. Para probar desde el código puedes usar la misma configuración o exportar las variables de conexión antes de ejecutar `python native_app.py`.
 
 ## Crear el proyecto en Supabase
 
@@ -75,7 +86,9 @@ genera una contraseña nueva para el cliente. Si ya tienes un `.env`, el script
 te pide elegir otra ruta con `--config`. Actualiza las instalaciones que usaban
 la contraseña anterior al reemplazar su configuración.
 
-El proyecto nuevo comienza con el catálogo y los lectores vacíos. Si ya tienes
+El rol limitado que genera este script está pensado para la vista
+`--ligero`. Para usar toda la administración desde el escritorio, prueba
+primero con SQLite local. El proyecto nuevo comienza con el catálogo y los lectores vacíos. Si ya tienes
 datos, su traslado es un paso aparte. Para ejecutar el cliente empaquetado,
 genera nuevamente el ejecutable desde esta versión para que lea la configuración
 de TLS y del esquema.
@@ -92,7 +105,7 @@ py -3.12 -m venv .venv-native
 .\.venv-native\Scripts\python.exe -m PyInstaller --noconfirm packaging\native.spec
 ```
 
-Prueba `dist\PrestamosBibliotecaCSF-Nativo\PrestamosBibliotecaCSF-Nativo.exe`. Luego abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El resultado queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. El instalador coloca el ejecutable y sus bibliotecas y crea un acceso directo en el menú Inicio.
+El paquete incluye Qt WebEngine. Prueba `dist\PrestamosBibliotecaCSF-Nativo\PrestamosBibliotecaCSF-Nativo.exe`. Luego abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El resultado queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. El instalador coloca el ejecutable y sus bibliotecas y crea un acceso directo en el menú Inicio.
 
 ## Generar el paquete de Arch Linux x86_64
 

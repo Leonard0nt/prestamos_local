@@ -8,7 +8,12 @@ from desktop_native.config import config_file
 
 
 def main():
-    app = QApplication(sys.argv)
+    light_mode = "--ligero" in sys.argv
+    if not light_mode:
+        from desktop_native.full_window import LibraryBrowser, register_scheme
+
+        register_scheme()
+    app = QApplication([arg for arg in sys.argv if arg != "--ligero"])
     app.setApplicationName("Préstamos Biblioteca CSF")
     app.setQuitOnLastWindowClosed(False)
 
@@ -26,6 +31,19 @@ def main():
             None, "Configuración", f"{error}\n\nConfigura la base de datos en:\n{path}"
         )
         return 1
+
+    if not light_mode:
+        from django.conf import settings
+        from django.core.wsgi import get_wsgi_application
+        from desktop_native.bridge import HOST
+
+        settings.ALLOWED_HOSTS = [HOST]
+        app.setQuitOnLastWindowClosed(True)
+        browser = LibraryBrowser(get_wsgi_application(), path)
+        browser.show()
+        result = app.exec()
+        browser.dispose()
+        return result
 
     from desktop_native.window import LibraryWindow, LoginDialog
 
