@@ -10,3 +10,12 @@ def config_file():
     else:
         directory = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     return directory / "prestamos-biblioteca" / ".env"
+
+
+def load_desktop_environment(path):
+    import environ
+
+    if path.is_file():
+        environ.Env.read_env(path)
+    if not os.environ.get("DB_ENGINE"):
+        os.environ["DB_ENGINE"] = "postgresql" if os.environ.get("DB_NAME") else "sqlite"

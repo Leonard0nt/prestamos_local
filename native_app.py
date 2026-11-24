@@ -4,7 +4,7 @@ import sys
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 
-from desktop_native.config import config_file
+from desktop_native.config import config_file, load_desktop_environment
 
 
 def main():
@@ -18,15 +18,19 @@ def main():
     app.setQuitOnLastWindowClosed(False)
 
     import django
-    import environ
     from django.core.exceptions import ImproperlyConfigured
+    from django.db import DatabaseError
 
     path = config_file()
-    environ.Env.read_env(path)
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "prestamos_biblioteca.settings")
     try:
+        load_desktop_environment(path)
         django.setup()
-    except ImproperlyConfigured as error:
+        from desktop_native.local_setup import prepare_local_database
+
+        if not prepare_local_database():
+            return 0
+    except (DatabaseError, ImproperlyConfigured, OSError, ValueError) as error:
         QMessageBox.critical(
             None, "Configuración", f"{error}\n\nConfigura la base de datos en:\n{path}"
         )

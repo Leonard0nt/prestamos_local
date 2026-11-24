@@ -1,9 +1,10 @@
 [Setup]
 AppId={{7D68E6A8-AFCB-4AE1-87DF-69A23B8A5E30}
 AppName=Préstamos Biblioteca CSF Nativo
-AppVersion=0.1.0
+AppVersion=0.2.0
 DefaultDirName={localappdata}\Programs\PrestamosBibliotecaCSF-Nativo
 PrivilegesRequired=lowest
+UsePreviousAppDir=no
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\installer_output

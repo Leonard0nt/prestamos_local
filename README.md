@@ -2,6 +2,12 @@
 
 Sistema de gestión de biblioteca escolar para administrar usuarios, libros, ejemplares y préstamos. El proyecto está construido con Django y Django REST Framework, incluye vistas web para operación diaria y un lanzador de escritorio con PyWebView para abrir la aplicación como ventana nativa en Windows.
 
+## Instalar la app de escritorio
+
+La edición PySide6 funciona en Windows y Linux. Abre toda la interfaz en una ventana propia, sin servidor HTTP. En el primer arranque prepara SQLite local y te pide crear una cuenta de administrador.
+
+Consulta la [guía de instalación para Windows y Linux](packaging/README.md), que incluye la preparación automática de Supabase como opción para compartir una base entre equipos.
+
 ## ¿Qué permite hacer?
 
 - Iniciar sesión con perfiles de administrador o encargado de biblioteca.
@@ -176,7 +182,7 @@ En producción, usa `DEBUG=False`, una `SECRET_KEY` segura y limita `ALLOWED_HOS
    http://127.0.0.1:8000/login/
    ```
 
-## Ejecución como aplicación de escritorio
+## Lanzador original de Windows con servidor local
 
 El archivo `desktop_app.py` inicia Django con Waitress en `127.0.0.1:8765` y abre una ventana PyWebView en `/login/`.
 
@@ -186,7 +192,7 @@ python desktop_app.py
 
 Este modo busca `manage.py`, carga variables desde `.env`, inicia el servidor embebido y escribe logs en `desktop_app.log` junto al script o ejecutable.
 
-## Empaquetado para Windows
+## Empaquetado del lanzador original para Windows
 
 El repositorio incluye configuración para generar ejecutables e instaladores:
 
@@ -215,7 +221,3 @@ Luego puedes usar Inno Setup con `installer.iss` para crear el instalador final.
 ## Estado del proyecto
 
 Este repositorio corresponde a una aplicación Django funcional orientada a uso interno de biblioteca escolar, con interfaz web, API REST y soporte para ejecución como aplicación de escritorio en Windows.
-
-## Edición de escritorio con PySide6
-
-La edición PySide6 reutiliza las pantallas de Django dentro de Qt sin abrir un servidor HTTP local. Puede usar SQLite local o PostgreSQL. Consulta la [guía para Windows y Arch Linux](packaging/README.md).

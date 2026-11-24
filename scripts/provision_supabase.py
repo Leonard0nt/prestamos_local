@@ -25,6 +25,7 @@ from desktop_native.config import config_file
 API = "https://api.supabase.com/v1"
 SCHEMA = "biblioteca"
 CLIENT_ROLE = "biblioteca_desktop"
+FULL_CLIENT_ROLE = "biblioteca_desktop_full"
 
 
 class ProvisionError(Exception):
@@ -67,7 +68,7 @@ def wait_for_pooler(token, ref, timeout):
     raise ProvisionError("El proyecto todavía no ofrece un pooler activo. Reanuda con --project-ref.")
 
 
-def setup_database(admin, librarian, client_password):
+def setup_database(admin, librarian, client_password, full_desktop):
     from django import setup
     from django.db import connections
     from django.core.management import call_command
@@ -93,55 +94,70 @@ def setup_database(admin, librarian, client_password):
     from usuarioApp.models import EncargadoBiblioteca, usuario
 
     User = get_user_model()
+    from django.contrib.auth.password_validation import validate_password
+
     with transaction.atomic():
         account, created = User.objects.get_or_create(
-            username=librarian["username"], defaults={"email": librarian["email"]},
+            username=librarian["username"], defaults={"email": librarian.get("email", "")},
         )
         if created:
-            from django.contrib.auth.password_validation import validate_password
-
             validate_password(librarian["password"], account)
             account.set_password(librarian["password"])
-            account.save(update_fields=["password"])
-            EncargadoBiblioteca.objects.create(
-                user=account, nombre=librarian["name"], rut=librarian["rut"],
-                correo=librarian["email"], nivel=librarian["level"],
-            )
+            account.is_staff = full_desktop
+            account.is_superuser = full_desktop
+            account.save()
+            if not full_desktop:
+                EncargadoBiblioteca.objects.create(
+                    user=account, nombre=librarian["name"], rut=librarian["rut"],
+                    correo=librarian["email"], nivel=librarian["level"],
+                )
+        elif full_desktop:
+            if not (account.is_superuser and account.is_active and account.check_password(librarian["password"])):
+                raise ProvisionError("Usa las credenciales del administrador existente o un usuario nuevo.")
         elif not EncargadoBiblioteca.objects.filter(
             user=account, rut=librarian["rut"], correo=librarian["email"], nivel=librarian["level"]
         ).exists():
             raise ProvisionError("El nombre de usuario ya corresponde a otra cuenta.")
 
+    role_name = FULL_CLIENT_ROLE if full_desktop else CLIENT_ROLE
     with psycopg.connect(**options) as connection:
-        role = sql.Identifier(CLIENT_ROLE)
-        if connection.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (CLIENT_ROLE,)).fetchone():
+        role = sql.Identifier(role_name)
+        if connection.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role_name,)).fetchone():
             statement = "ALTER ROLE {} WITH LOGIN PASSWORD {}"
         else:
             statement = "CREATE ROLE {} WITH LOGIN PASSWORD {}"
         connection.execute(sql.SQL(statement).format(role, sql.Literal(client_password)))
         connection.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(schema, role))
-        for model in (User, EncargadoBiblioteca, usuario, Libro, Ejemplar, prestamo):
-            table = sql.Identifier(SCHEMA, model._meta.db_table)
-            connection.execute(sql.SQL("GRANT SELECT ON TABLE {} TO {}").format(table, role))
-        for model, column in ((User, "password"), (Ejemplar, "estado")):
-            table = sql.Identifier(SCHEMA, model._meta.db_table)
+        if full_desktop:
+            connection.execute(sql.SQL(
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {} TO {}"
+            ).format(schema, role))
+            connection.execute(sql.SQL(
+                "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {} TO {}"
+            ).format(schema, role))
+        else:
+            for model in (User, EncargadoBiblioteca, usuario, Libro, Ejemplar, prestamo):
+                table = sql.Identifier(SCHEMA, model._meta.db_table)
+                connection.execute(sql.SQL("GRANT SELECT ON TABLE {} TO {}").format(table, role))
+            for model, column in ((User, "password"), (Ejemplar, "estado")):
+                table = sql.Identifier(SCHEMA, model._meta.db_table)
+                connection.execute(
+                    sql.SQL("GRANT UPDATE ({}) ON TABLE {} TO {}").format(sql.Identifier(column), table, role)
+                )
+            loan_table = sql.Identifier(SCHEMA, prestamo._meta.db_table)
+            connection.execute(sql.SQL("GRANT INSERT ON TABLE {} TO {}").format(loan_table, role))
+            sequence = connection.execute(
+                "SELECT pg_get_serial_sequence(%s, %s)::regclass::oid",
+                (loan_table.as_string(), prestamo._meta.pk.column),
+            ).fetchone()[0]
+            sequence_name = connection.execute(
+                "SELECT relname FROM pg_class WHERE oid = %s", (sequence,),
+            ).fetchone()[0]
             connection.execute(
-                sql.SQL("GRANT UPDATE ({}) ON TABLE {} TO {}").format(sql.Identifier(column), table, role)
+                sql.SQL("GRANT USAGE ON SEQUENCE {} TO {}").format(
+                    sql.Identifier(SCHEMA, sequence_name), role
+                )
             )
-        loan_table = sql.Identifier(SCHEMA, prestamo._meta.db_table)
-        connection.execute(sql.SQL("GRANT INSERT ON TABLE {} TO {}").format(loan_table, role))
-        sequence = connection.execute(
-            "SELECT pg_get_serial_sequence(%s, %s)::regclass::oid",
-            (loan_table.as_string(), prestamo._meta.pk.column),
-        ).fetchone()[0]
-        sequence_name = connection.execute(
-            "SELECT relname FROM pg_class WHERE oid = %s", (sequence,),
-        ).fetchone()[0]
-        connection.execute(
-            sql.SQL("GRANT USAGE ON SEQUENCE {} TO {}").format(
-                sql.Identifier(SCHEMA, sequence_name), role
-            )
-        )
     connections.close_all()
 
 
@@ -160,6 +176,7 @@ def main():
     parser.add_argument("--region", default="sa-east-1")
     parser.add_argument("--project-ref", help="Reanuda la preparación de un proyecto existente")
     parser.add_argument("--config", type=Path, default=config_file())
+    parser.add_argument("--full-desktop", action="store_true", help="Prepara la interfaz completa y su administrador")
     args = parser.parse_args()
     if args.project_ref and not re.fullmatch("[a-z]{20}", args.project_ref):
         parser.error("--project-ref requiere la referencia de 20 letras del proyecto")
@@ -173,29 +190,33 @@ def main():
     if not args.project_ref and len(admin_password) < 16:
         parser.error("usa una contraseña de PostgreSQL de al menos 16 caracteres")
 
-    librarian = {
-        "username": input("Usuario del bibliotecario: ").strip(),
-        "name": input("Nombre: ").strip(),
-        "rut": input("RUT: ").strip(),
-        "email": input("Correo: ").strip(),
-        "level": input("Nivel (BASICA o MEDIA): ").strip().upper(),
-        "password": getpass("Contraseña del bibliotecario: "),
-    }
+    librarian = {"username": input("Usuario de acceso: ").strip()}
+    if not args.full_desktop:
+        librarian.update(
+            name=input("Nombre: ").strip(),
+            rut=input("RUT: ").strip(),
+            email=input("Correo: ").strip(),
+            level=input("Nivel (BASICA o MEDIA): ").strip().upper(),
+        )
+    librarian["password"] = getpass("Contraseña de acceso a la app: ")
     if not token or not admin_password or not all(librarian.values()):
         parser.error("completa todos los datos")
-    from django.core.validators import validate_email
-
-    try:
-        validate_email(librarian["email"])
-    except ValidationError:
-        parser.error("indica un correo válido")
-    if any(len(librarian[field]) > limit for field, limit in (
+    if any(len(librarian.get(field, "")) > limit for field, limit in (
         ("username", 150), ("name", 100), ("rut", 20),
     )):
         parser.error("revisa la longitud del usuario, nombre y RUT")
+    from django.contrib.auth.validators import UnicodeUsernameValidator
+    from django.core.validators import validate_email
+
+    try:
+        UnicodeUsernameValidator()(librarian["username"])
+        if not args.full_desktop:
+            validate_email(librarian["email"])
+    except ValidationError as error:
+        parser.error(" ".join(error.messages))
     if len(librarian["password"]) < 8:
-        parser.error("usa una contraseña de bibliotecario de al menos ocho caracteres")
-    if librarian["level"] not in {"BASICA", "MEDIA"}:
+        parser.error("usa una contraseña de acceso de al menos ocho caracteres")
+    if not args.full_desktop and librarian["level"] not in {"BASICA", "MEDIA"}:
         parser.error("el nivel debe ser BASICA o MEDIA")
 
     ref = args.project_ref
@@ -219,9 +240,13 @@ def main():
         client_password = secrets.token_urlsafe(32)
         setup_database(
             dict(settings, DB_USER=db_user, DB_PASSWORD=admin_password),
-            librarian, client_password,
+            librarian, client_password, args.full_desktop,
         )
-        write_config(args.config, dict(settings, DB_USER=f"{CLIENT_ROLE}.{ref}", DB_PASSWORD=client_password))
+        role = FULL_CLIENT_ROLE if args.full_desktop else CLIENT_ROLE
+        write_config(args.config, dict(
+            settings, DB_USER=f"{role}.{ref}", DB_PASSWORD=client_password,
+            SECRET_KEY=secrets.token_urlsafe(48),
+        ))
     except (HTTPError, URLError, TimeoutError, OSError, ProvisionError, psycopg.Error, DatabaseError, ValidationError) as error:
         if isinstance(error, HTTPError):
             message = f"Supabase respondió con HTTP {error.code}."

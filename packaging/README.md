@@ -1,146 +1,69 @@
 # Préstamos Biblioteca CSF en PySide6
 
-La edición de escritorio abre **las mismas pantallas de Django** en una
-ventana PySide6 con Qt WebEngine. Incluye los formularios y permisos de
-la app original para libros, ejemplares, préstamos, devoluciones,
-alumnos y encargados, además de la configuración de cuenta y el modo oscuro.
+La edición de escritorio abre la interfaz completa de Django dentro de Qt WebEngine, sin servidor HTTP ni acceso desde un navegador externo. Puedes trabajar sin internet con SQLite.
 
-La ventana pasa las solicitudes a Django dentro del proceso mediante
-Qt WebChannel. No abre un puerto local ni usa Waitress. Bootstrap se distribuye
-con la aplicación para que la interfaz cargue sin conexión a internet.
+En la primera apertura, la aplicación crea la base, aplica las migraciones y te pide un usuario y una contraseña de administrador. En las siguientes aperturas, inicia sesión con esa cuenta. El catálogo empieza vacío.
 
-Para usar menos memoria, puedes arrancar `python native_app.py --ligero` o
-añadir `--ligero` al acceso directo. Esa vista de widgets Qt cubre la consulta y
-el registro de préstamos. El inicio habitual abre la interfaz completa.
-
-## Probar en un solo PC con SQLite
-
-Con Python 3.12 o 3.15 y `requirements-native.txt` instalados, ejecuta desde la raíz
-del repositorio:
-
-```bash
-python scripts/setup_sqlite.py --demo
-python native_app.py
-```
-
-El script aplica las migraciones, pide crear la primera cuenta y agrega un
-libro y un lector ficticios. Entra con la cuenta creada, abre **Préstamos → Préstamos activos → Nuevo
-préstamo** y selecciona **El libro de prueba**, su ejemplar, **Lector de
-prueba** y el nivel **Básica**. Desde la misma página puedes devolver o
-archivar ese préstamo.
-Puedes omitir `--demo` si quieres partir con el catálogo vacío.
-
-El archivo `prestamos.sqlite3` queda en la misma carpeta que la configuración
-del usuario, indicada en la tabla de abajo. Si ya configuraste PostgreSQL o
-Supabase, guarda tu `.env` existente con otro nombre antes de ejecutar el
-script. El script conserva esa configuración y te avisa si la encuentra.
-SQLite crea una base independiente en este PC. Para usar el instalador con
-SQLite, prepara primero la base con el script y compila el ejecutable desde
-esta versión de la rama.
-
-## Ubicación de la configuración y conexión a PostgreSQL
-
-Para usar PostgreSQL en lugar de SQLite, copia `packaging/native.env.example` como `.env` en la ubicación correspondiente y rellena los datos de conexión. La base debe estar accesible y tener las migraciones aplicadas.
-
-| Sistema | Archivo de configuración |
+| Sistema | Carpeta de datos |
 | --- | --- |
-| Windows | `%LOCALAPPDATA%\prestamos-biblioteca\.env` |
-| Arch Linux | `${XDG_CONFIG_HOME:-$HOME/.config}/prestamos-biblioteca/.env` |
+| Windows | `%LOCALAPPDATA%\prestamos-biblioteca` |
+| Linux | `$XDG_CONFIG_HOME/prestamos-biblioteca` o `~/.config/prestamos-biblioteca` |
 
-Utiliza una cuenta de PostgreSQL autorizada para la base y las operaciones que vas a realizar. El instalador distribuye un ejemplo vacío y el cliente lee la configuración de cada equipo. Para probar desde el código puedes usar la misma configuración o exportar las variables de conexión antes de ejecutar `python native_app.py`.
+La base local es `prestamos.sqlite3`. Una actualización conserva la base y las cuentas. Si la app encuentra una conexión PostgreSQL configurada en el archivo `.env` de esa carpeta, sigue usándola.
 
-## Crear el proyecto en Supabase
+## Windows x64
 
-Desde la raíz de esta rama, con Python 3.12 o 3.15 y las dependencias de
-`requirements-native.txt` instaladas, ejecuta:
+Si ya tienes el instalador, ábrelo y luego inicia **Préstamos Biblioteca CSF Nativo** desde el menú Inicio. El destino sugerido está dentro de tu perfil y puedes elegir otra carpeta donde tengas permisos.
 
-```bash
-python scripts/provision_supabase.py --org TU_ORGANIZACION --name prestamos-biblioteca --region sa-east-1
-```
-
-Usa el **slug** de tu organización y un
-[token personal de acceso de Supabase](https://supabase.com/dashboard/account/tokens)
-con permisos para crear proyectos en ella. El script pide el token, la contraseña
-de PostgreSQL y los datos del primer bibliotecario en la terminal. Las contraseñas
-y el token se escriben de forma oculta. El proyecto se crea con el plan de la
-organización y cuenta para su cuota.
-
-El proceso espera al pooler en modo sesión, aplica las migraciones en el esquema
-`biblioteca`, crea la cuenta de la aplicación y escribe el archivo de conexión
-en la ruta del sistema indicada arriba. La configuración usa TLS con
-verificación del servidor y guarda la contraseña de un rol PostgreSQL limitado
-al flujo de la app nativa. El token de gestión y la contraseña administrativa
-quedan fuera de ese archivo. Usa equipos de confianza para este cliente, ya que
-se conecta directamente a la base con ese rol.
-
-Si el proyecto se creó y la preparación se interrumpió, conserva la referencia
-que imprime el script y continúa con:
-
-```bash
-python scripts/provision_supabase.py --project-ref REFERENCIA
-```
-
-Usa la misma contraseña de PostgreSQL. Si la cuenta del bibliotecario ya se
-creó, el script conserva su contraseña. Volver a preparar el rol PostgreSQL
-genera una contraseña nueva para el cliente. Si ya tienes un `.env`, el script
-te pide elegir otra ruta con `--config`. Actualiza las instalaciones que usaban
-la contraseña anterior al reemplazar su configuración.
-
-El rol limitado que genera este script está pensado para la vista
-`--ligero`. Para usar toda la administración desde el escritorio, prueba
-primero con SQLite local. El proyecto nuevo comienza con el catálogo y los lectores vacíos. Si ya tienes
-datos, su traslado es un paso aparte. Para ejecutar el cliente empaquetado,
-genera nuevamente el ejecutable desde esta versión para que lea la configuración
-de TLS y del esquema.
-
-## Generar el instalador de Windows x64
-
-Compila en Windows x64 con **Python 3.15** e **Inno Setup 6**. Desde PowerShell:
+Para generarlo, instala Python 3.15 x64 e Inno Setup 6 o 7. Descarga y extrae el [ZIP de la rama](https://github.com/Leonard0nt/prestamos_local/archive/refs/heads/codex/pyside6-desktop.zip). En PowerShell, desde la carpeta que contiene `requirements-native.txt`, ejecuta:
 
 ```powershell
-git clone --branch codex/pyside6-desktop https://github.com/Leonard0nt/prestamos_local.git
-cd prestamos_local
-py -3.15 -m venv .venv-native
+python -m venv .venv-native
 .\.venv-native\Scripts\python.exe -m pip install -r requirements-native.txt
 .\.venv-native\Scripts\python.exe -m PyInstaller --noconfirm packaging\native.spec
 ```
 
-Si descargaste el ZIP de la rama, extrae los archivos y ejecuta los comandos desde la carpeta que contiene `requirements-native.txt`. El paquete incluye Qt WebEngine. Prueba `dist\PrestamosBibliotecaCSF-Nativo\PrestamosBibliotecaCSF-Nativo.exe`. Luego abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El resultado queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. El instalador coloca el ejecutable y sus bibliotecas y crea un acceso directo en el menú Inicio.
+Cuando PyInstaller indique `Build complete`, abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El instalador queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. Para distribuirlo en equipos con Control inteligente de aplicaciones, firma el ejecutable antes de empaquetarlo y firma también el instalador.
 
-## Generar el paquete de Arch Linux x86_64
+## Linux
 
-Compila en Arch x86_64. Desde Bash, instala las herramientas. El ejemplo usa `uv` para instalar Python 3.12. Las dependencias seleccionan sus versiones según el intérprete.
+Desde la raíz del código, con Python 3.12 o 3.15:
 
 ```bash
-sudo pacman -S --needed base-devel git uv
-git clone --branch codex/pyside6-desktop https://github.com/Leonard0nt/prestamos_local.git
-cd prestamos_local
-uv python install 3.12
+python3 -m venv .venv-native
+.venv-native/bin/python -m pip install -r requirements-native.txt
+.venv-native/bin/python native_app.py
+```
+
+En Arch, puedes instalar Python 3.12 con `uv` si el Python del sistema usa otra versión. Para generar e instalar un paquete en Arch x86_64, ejecuta desde la raíz:
+
+```bash
+sudo pacman -S --needed base-devel uv
 uv venv --python 3.12 .venv-native
 uv pip install --python .venv-native/bin/python -r requirements-native.txt
 .venv-native/bin/python -m PyInstaller --noconfirm packaging/native.spec
-tar -C dist -czf packaging/PrestamosBibliotecaCSF-Nativo-0.1.0.tar.gz PrestamosBibliotecaCSF-Nativo
+tar -C dist -czf packaging/PrestamosBibliotecaCSF-Nativo-0.2.0.tar.gz PrestamosBibliotecaCSF-Nativo
 cd packaging
 makepkg --syncdeps
-sudo pacman -U prestamos-biblioteca-nativo-0.1.0-1-x86_64.pkg.tar.zst
+sudo pacman -U prestamos-biblioteca-nativo-0.2.0-1-x86_64.pkg.tar.zst
 ```
 
-Ejecuta `makepkg` con tu usuario habitual. La aplicación aparece en el menú como **Préstamos Biblioteca CSF Nativo**. El ejemplo de conexión también queda disponible en `/usr/share/prestamos-biblioteca-nativo/native.env.example`.
+Luego abre **Préstamos Biblioteca CSF Nativo** desde el menú o ejecuta `prestamos-biblioteca-nativo`.
 
-## Ejecutar las pruebas
+## Supabase opcional
 
-Desde la raíz del proyecto, con las dependencias de `requirements-native.txt`
-instaladas, ejecuta la suite con una base SQLite temporal:
+Con las dependencias instaladas, ejecuta desde la raíz del código. En Windows usa `.\.venv-native\Scripts\python.exe` en vez de `.venv-native/bin/python`.
 
 ```bash
-env DB_ENGINE=sqlite DB_SQLITE_PATH=:memory: python manage.py test
+.venv-native/bin/python scripts/provision_supabase.py --full-desktop --org TU_ORGANIZACION
 ```
 
-La suite pasa por el puente utilizado por la ventana de escritorio y verifica
-el inicio de sesión, las operaciones de catálogo, préstamos, alumnos y
-encargados, la configuración de cuenta y las restricciones de acceso. Para
-probar la ventana, arranca la app con una base inicializada para desarrollo.
+Introduce un [token personal de Supabase](https://supabase.com/dashboard/account/tokens), la contraseña de PostgreSQL y las credenciales que usarás para entrar en la app. El script crea el proyecto, aplica las migraciones, crea el administrador y guarda la conexión TLS en `.env`. Para un proyecto existente o para reanudar, cambia `--org TU_ORGANIZACION` por `--project-ref REFERENCIA`.
 
-## Probar el arranque
+Si ya tienes un `.env`, el script lo conserva. Guárdalo con otro nombre antes de cambiar la conexión. La base local queda en el equipo y sus datos no se copian a Supabase. Para conectar otros equipos de confianza, copia el `.env` generado a su carpeta de datos por un canal seguro. Contiene las credenciales de un rol con acceso al catálogo y a las cuentas de la aplicación.
 
-Una vez configurada la base, abre el ejecutable o el acceso directo. Prueba primero con una base de desarrollo. El registro guarda un préstamo real en la base configurada. Para comparar el arranque, mide desde el doble clic hasta el diálogo de acceso en el mismo PC y con las dos ediciones cerradas.
+## Pruebas
+
+```bash
+env DB_ENGINE=sqlite DB_SQLITE_PATH=:memory: .venv-native/bin/python manage.py test
+```
