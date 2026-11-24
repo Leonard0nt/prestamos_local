@@ -92,6 +92,30 @@ DATABASES = {
     }
 }
 
+# Ajustes opcionales para el cliente conectado a PostgreSQL alojado.
+db_schema = env("DB_SCHEMA", default="")
+db_options = {
+    option: value
+    for option, value in {
+        "sslmode": env("DB_SSLMODE", default=""),
+        "sslrootcert": env("DB_SSLROOTCERT", default=""),
+    }.items()
+    if value
+}
+if db_schema:
+    if not db_schema.isascii() or not db_schema.isidentifier():
+        raise ValueError("DB_SCHEMA debe contener un identificador PostgreSQL simple.")
+    from django.db.backends.signals import connection_created
+
+    def set_database_schema(sender, connection, **kwargs):
+        if connection.alias == "default":
+            with connection.cursor() as cursor:
+                cursor.execute(f'SET search_path TO "{db_schema}"')
+
+    connection_created.connect(set_database_schema, weak=False)
+if db_options:
+    DATABASES["default"]["OPTIONS"] = db_options
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

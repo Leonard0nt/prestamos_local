@@ -15,6 +15,48 @@ Copia `packaging/native.env.example` como `.env` en la ubicación correspondient
 
 Utiliza una cuenta de PostgreSQL autorizada para esta base. El instalador distribuye un ejemplo vacío y el cliente lee la configuración de cada equipo. Para probar desde el código puedes usar la misma configuración o exportar las variables de conexión antes de ejecutar `python native_app.py`.
 
+## Crear el proyecto en Supabase
+
+Desde la raíz de esta rama, con Python 3.12 y las dependencias de
+`requirements-native.txt` instaladas, ejecuta:
+
+```bash
+python scripts/provision_supabase.py --org TU_ORGANIZACION --name prestamos-biblioteca --region sa-east-1
+```
+
+Usa el **slug** de tu organización y un
+[token personal de acceso de Supabase](https://supabase.com/dashboard/account/tokens)
+con permisos para crear proyectos en ella. El script pide el token, la contraseña
+de PostgreSQL y los datos del primer bibliotecario en la terminal. Las contraseñas
+y el token se escriben de forma oculta. El proyecto se crea con el plan de la
+organización y cuenta para su cuota.
+
+El proceso espera al pooler en modo sesión, aplica las migraciones en el esquema
+`biblioteca`, crea la cuenta de la aplicación y escribe el archivo de conexión
+en la ruta del sistema indicada arriba. La configuración usa TLS con
+verificación del servidor y guarda la contraseña de un rol PostgreSQL limitado
+al flujo de la app nativa. El token de gestión y la contraseña administrativa
+quedan fuera de ese archivo. Usa equipos de confianza para este cliente, ya que
+se conecta directamente a la base con ese rol.
+
+Si el proyecto se creó y la preparación se interrumpió, conserva la referencia
+que imprime el script y continúa con:
+
+```bash
+python scripts/provision_supabase.py --project-ref REFERENCIA
+```
+
+Usa la misma contraseña de PostgreSQL. Si la cuenta del bibliotecario ya se
+creó, el script conserva su contraseña. Volver a preparar el rol PostgreSQL
+genera una contraseña nueva para el cliente. Si ya tienes un `.env`, el script
+te pide elegir otra ruta con `--config`. Actualiza las instalaciones que usaban
+la contraseña anterior al reemplazar su configuración.
+
+El proyecto nuevo comienza con el catálogo y los lectores vacíos. Si ya tienes
+datos, su traslado es un paso aparte. Para ejecutar el cliente empaquetado,
+genera nuevamente el ejecutable desde esta versión para que lea la configuración
+de TLS y del esquema.
+
 ## Generar el instalador de Windows x64
 
 Compila en Windows x64 con **Python 3.12** e **Inno Setup 6**. Desde PowerShell:
