@@ -81,41 +81,54 @@ WSGI_APPLICATION = "prestamos_biblioteca.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+db_engine = env("DB_ENGINE", default="postgresql")
+if db_engine == "sqlite":
+    from desktop_native.config import config_file
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": env("DB_SQLITE_PATH", default=str(config_file().with_name("prestamos.sqlite3"))),
+        }
     }
-}
+elif db_engine == "postgresql":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME"),
+            "USER": env("DB_USER"),
+            "PASSWORD": env("DB_PASSWORD"),
+            "HOST": env("DB_HOST"),
+            "PORT": env("DB_PORT"),
+        }
+    }
 
-# Ajustes opcionales para el cliente conectado a PostgreSQL alojado.
-db_schema = env("DB_SCHEMA", default="")
-db_options = {
-    option: value
-    for option, value in {
-        "sslmode": env("DB_SSLMODE", default=""),
-        "sslrootcert": env("DB_SSLROOTCERT", default=""),
-    }.items()
-    if value
-}
-if db_schema:
-    if not db_schema.isascii() or not db_schema.isidentifier():
-        raise ValueError("DB_SCHEMA debe contener un identificador PostgreSQL simple.")
-    from django.db.backends.signals import connection_created
+    # Ajustes opcionales para el cliente conectado a PostgreSQL alojado.
+    db_schema = env("DB_SCHEMA", default="")
+    db_options = {
+        option: value
+        for option, value in {
+            "sslmode": env("DB_SSLMODE", default=""),
+            "sslrootcert": env("DB_SSLROOTCERT", default=""),
+        }.items()
+        if value
+    }
+    if db_schema:
+        if not db_schema.isascii() or not db_schema.isidentifier():
+            raise ValueError("DB_SCHEMA debe contener un identificador PostgreSQL simple.")
+        from django.db.backends.signals import connection_created
 
-    def set_database_schema(sender, connection, **kwargs):
-        if connection.alias == "default":
-            with connection.cursor() as cursor:
-                cursor.execute(f'SET search_path TO "{db_schema}"')
+        def set_database_schema(sender, connection, **kwargs):
+            if connection.alias == "default":
+                with connection.cursor() as cursor:
+                    cursor.execute(f'SET search_path TO "{db_schema}"')
 
-    connection_created.connect(set_database_schema, weak=False)
-if db_options:
-    DATABASES["default"]["OPTIONS"] = db_options
+        connection_created.connect(set_database_schema, weak=False)
+    if db_options:
+        DATABASES["default"]["OPTIONS"] = db_options
 
+else:
+    raise ValueError("DB_ENGINE debe ser sqlite o postgresql.")
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

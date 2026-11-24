@@ -1,16 +1,10 @@
 import os
 import sys
-from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 
-def config_file():
-    if os.name == "nt":
-        directory = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData/Local"))
-    else:
-        directory = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return directory / "prestamos-biblioteca" / ".env"
+from desktop_native.config import config_file
 
 
 def main():

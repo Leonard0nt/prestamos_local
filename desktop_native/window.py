@@ -40,7 +40,7 @@ class LoginDialog(QDialog):
                 QMessageBox.warning(self, "Acceso", "Credenciales inválidas o perfil sin acceso.")
                 return
         except DatabaseError:
-            QMessageBox.critical(self, "Conexión", "Revisa la conexión con PostgreSQL.")
+            QMessageBox.critical(self, "Conexión", "Revisa la conexión con la base de datos.")
             return
         self.account = account
         self.accept()
@@ -113,7 +113,7 @@ class LibraryWindow(QMainWindow):
         try:
             self.copies = list(find_copies(self.account, self.book_query.text().strip()))
         except DatabaseError:
-            QMessageBox.critical(self, "Catálogo", "No se pudo consultar PostgreSQL.")
+            QMessageBox.critical(self, "Catálogo", "No se pudo consultar la base de datos.")
             return
         self.table.setRowCount(len(self.copies))
         self.table.clearSelection()
@@ -133,7 +133,7 @@ class LibraryWindow(QMainWindow):
         try:
             readers = list(find_readers(self.account, query))
         except DatabaseError:
-            QMessageBox.critical(self, "Lectores", "No se pudo consultar PostgreSQL.")
+            QMessageBox.critical(self, "Lectores", "No se pudo consultar la base de datos.")
             return
         for reader in readers:
             self.readers.addItem(f"{reader.nombre} ({reader.rut})", reader.pk)
@@ -158,7 +158,7 @@ class LibraryWindow(QMainWindow):
             QMessageBox.warning(self, "Préstamo", str(error))
             return
         except DatabaseError:
-            QMessageBox.critical(self, "Préstamo", "No se pudo guardar en PostgreSQL.")
+            QMessageBox.critical(self, "Préstamo", "No se pudo guardar en la base de datos.")
             return
         self.search_books()
         self.due_date.setDate(QDate.currentDate().addDays(12))

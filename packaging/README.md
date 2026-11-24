@@ -1,12 +1,35 @@
 # Préstamos Biblioteca CSF en PySide6
 
-Este prototipo abre ventanas nativas y usa los modelos de Django y la misma base PostgreSQL. Puedes iniciar sesión con una cuenta existente, buscar libros y lectores y registrar préstamos. El prototipo cubre ese recorrido. Para devoluciones, historial y administración del catálogo, sigue usando la edición web.
+Este prototipo abre ventanas nativas y usa los modelos de Django con SQLite local o PostgreSQL. Puedes iniciar sesión con una cuenta existente, buscar libros y lectores y registrar préstamos. El prototipo cubre ese recorrido. Para devoluciones, historial y administración del catálogo, sigue usando la edición web.
 
-El cliente llama a Django y a PostgreSQL directamente. No levanta un servidor HTTP ni requiere Waitress o WebView2. PostgreSQL debe estar accesible desde el equipo y tener las migraciones del proyecto aplicadas.
+El cliente usa el ORM de Django directamente, sin servidor HTTP, Waitress ni WebView2.
 
-## Configurar la conexión en cada PC
+## Probar en un solo PC con SQLite
 
-Copia `packaging/native.env.example` como `.env` en la ubicación correspondiente y rellena los datos de PostgreSQL.
+Con Python 3.12 y `requirements-native.txt` instalados, ejecuta desde la raíz
+del repositorio:
+
+```bash
+python scripts/setup_sqlite.py --demo
+python native_app.py
+```
+
+El script aplica las migraciones, pide crear la primera cuenta y agrega un
+libro y un lector ficticios. Para probar un préstamo, busca **El libro de
+prueba** y **Lector de prueba**, selecciona **Básica** y registra el préstamo.
+Puedes omitir `--demo` si quieres partir con el catálogo vacío.
+
+El archivo `prestamos.sqlite3` queda en la misma carpeta que la configuración
+del usuario, indicada en la tabla de abajo. Si ya configuraste PostgreSQL o
+Supabase, guarda tu `.env` existente con otro nombre antes de ejecutar el
+script. El script conserva esa configuración y te avisa si la encuentra.
+SQLite crea una base independiente en este PC. Para usar el instalador con
+SQLite, prepara primero la base con el script y compila el ejecutable desde
+esta versión de la rama.
+
+## Ubicación de la configuración y conexión a PostgreSQL
+
+Para usar PostgreSQL en lugar de SQLite, copia `packaging/native.env.example` como `.env` en la ubicación correspondiente y rellena los datos de conexión. La base debe estar accesible y tener las migraciones aplicadas.
 
 | Sistema | Archivo de configuración |
 | --- | --- |

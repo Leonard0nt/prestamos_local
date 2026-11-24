@@ -20,6 +20,8 @@ from psycopg import sql
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from desktop_native.config import config_file
+
 API = "https://api.supabase.com/v1"
 SCHEMA = "biblioteca"
 CLIENT_ROLE = "biblioteca_desktop"
@@ -143,14 +145,6 @@ def setup_database(admin, librarian, client_password):
     connections.close_all()
 
 
-def default_config_path():
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData/Local"))
-    else:
-        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "prestamos-biblioteca" / ".env"
-
-
 def write_config(path, settings):
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -165,7 +159,7 @@ def main():
     parser.add_argument("--name", default="prestamos-biblioteca")
     parser.add_argument("--region", default="sa-east-1")
     parser.add_argument("--project-ref", help="Reanuda la preparación de un proyecto existente")
-    parser.add_argument("--config", type=Path, default=default_config_path())
+    parser.add_argument("--config", type=Path, default=config_file())
     args = parser.parse_args()
     if args.project_ref and not re.fullmatch("[a-z]{20}", args.project_ref):
         parser.error("--project-ref requiere la referencia de 20 letras del proyecto")
@@ -218,7 +212,7 @@ def main():
         print(f"Proyecto: https://supabase.com/dashboard/project/{ref}", flush=True)
         host, port, database = wait_for_pooler(token, ref, timeout=600)
         settings = {
-            "DB_NAME": database, "DB_HOST": host, "DB_PORT": str(port),
+            "DB_ENGINE": "postgresql", "DB_NAME": database, "DB_HOST": host, "DB_PORT": str(port),
             "DB_SCHEMA": SCHEMA, "DB_SSLMODE": "verify-full", "DB_SSLROOTCERT": "system",
         }
         db_user = f"postgres.{ref}"

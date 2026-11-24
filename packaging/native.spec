@@ -15,7 +15,7 @@ root = Path(SPECPATH).parent
 packages = (
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "django.db.backends.postgresql", "librosApp", "usuarioApp", "prestamoApp",
+    "django.db.backends.postgresql", "django.db.backends.sqlite3", "librosApp", "usuarioApp", "prestamoApp",
 )
 hidden = ["prestamos_biblioteca.settings"]
 for package in packages:
