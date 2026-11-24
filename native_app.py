@@ -10,6 +10,7 @@ from desktop_native.config import config_file
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Préstamos Biblioteca CSF")
+    app.setQuitOnLastWindowClosed(False)
 
     import django
     import environ
@@ -28,13 +29,31 @@ def main():
 
     from desktop_native.window import LibraryWindow, LoginDialog
 
-    login = LoginDialog()
-    if login.exec() != QDialog.DialogCode.Accepted:
-        return 0
+    from PySide6.QtCore import QEventLoop
 
-    window = LibraryWindow(login.account)
-    window.show()
-    return app.exec()
+    while True:
+        login = LoginDialog()
+        if login.exec() != QDialog.DialogCode.Accepted:
+            return 0
+
+        window = LibraryWindow(login.account)
+        loop = QEventLoop()
+        signed_out = False
+
+        def logout():
+            nonlocal signed_out
+            signed_out = True
+            window.close()
+
+        window.logout_requested.connect(logout)
+        window.closed.connect(loop.quit)
+        window.show()
+        loop.exec()
+        window.closed.disconnect(loop.quit)
+        window.logout_requested.disconnect(logout)
+        window.deleteLater()
+        if not signed_out:
+            return 0
 
 
 if __name__ == "__main__":

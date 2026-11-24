@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from librosApp.models import Ejemplar
+from prestamoApp.models import prestamo
 from prestamoApp.serializers import PrestamoSerializer
 from usuarioApp.models import usuario
 
@@ -30,6 +31,7 @@ def find_copies(account, query):
         .filter(
             Q(libro__titulo__icontains=query)
             | Q(libro__autor__icontains=query)
+            | Q(libro__editorial__icontains=query)
             | Q(libro__codigo_libro__icontains=query)
             | Q(codigo__icontains=query)
         )
@@ -38,11 +40,25 @@ def find_copies(account, query):
     )
 
 
-def find_readers(account, query):
+def find_readers(account, query, *, active=True):
     return (
-        usuario.objects.filter(_scope(account), activo=True)
-        .filter(Q(nombre__icontains=query) | Q(rut__icontains=query))
+        usuario.objects.filter(_scope(account), activo=active)
+        .filter(Q(nombre__icontains=query) | Q(rut__icontains=query) | Q(email__icontains=query))
         .order_by("nombre", "pk")[:50]
+    )
+
+
+def find_loans(account, query, *, active=True):
+    return (
+        prestamo.objects.filter(_scope(account), activo=active)
+        .filter(
+            Q(usuario__nombre__icontains=query)
+            | Q(usuario__rut__icontains=query)
+            | Q(ejemplar__libro__titulo__icontains=query)
+            | Q(ejemplar__codigo__icontains=query)
+        )
+        .select_related("usuario", "ejemplar__libro")
+        .order_by("-fecha_prestamo", "-pk")[:100]
     )
 
 

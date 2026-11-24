@@ -1,6 +1,6 @@
 # Préstamos Biblioteca CSF en PySide6
 
-Este prototipo abre ventanas nativas y usa los modelos de Django con SQLite local o PostgreSQL. Puedes iniciar sesión con una cuenta existente, buscar libros y lectores y registrar préstamos. El prototipo cubre ese recorrido. Para devoluciones, historial y administración del catálogo, sigue usando la edición web.
+Este prototipo abre ventanas nativas y usa los modelos de Django con SQLite local o PostgreSQL. Puedes iniciar sesión con una cuenta existente y navegar entre Libros, Préstamos y Alumnos. La edición nativa permite consultar préstamos activos y archivados y registrar un préstamo desde su propio diálogo. Para devoluciones y administración del catálogo, alumnos o encargados, sigue usando la edición web.
 
 El cliente usa el ORM de Django directamente, sin servidor HTTP, Waitress ni WebView2.
 
@@ -15,8 +15,8 @@ python native_app.py
 ```
 
 El script aplica las migraciones, pide crear la primera cuenta y agrega un
-libro y un lector ficticios. Para probar un préstamo, busca **El libro de
-prueba** y **Lector de prueba**, selecciona **Básica** y registra el préstamo.
+libro y un lector ficticios. Para probar un préstamo, abre **Préstamos → Nuevo préstamo**, busca **El libro
+de prueba** y **Lector de prueba**, selecciona **Básica** y registra el préstamo.
 Puedes omitir `--demo` si quieres partir con el catálogo vacío.
 
 El archivo `prestamos.sqlite3` queda en la misma carpeta que la configuración
