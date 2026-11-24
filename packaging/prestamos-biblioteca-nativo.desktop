@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Préstamos Biblioteca CSF Nativo
+Comment=Catálogo y registro de préstamos
+Exec=prestamos-biblioteca-nativo
+Terminal=false
+Categories=Office;

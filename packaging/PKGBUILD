@@ -1,0 +1,19 @@
+pkgname=prestamos-biblioteca-nativo
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Cliente de escritorio de préstamos de biblioteca'
+arch=('x86_64')
+url='https://github.com/Leonard0nt/prestamos_local'
+license=('custom')
+depends=('glibc' 'glib2' 'libgl' 'libxkbcommon-x11' 'xcb-util-cursor' 'xcb-util-image' 'xcb-util-keysyms' 'xcb-util-renderutil' 'xcb-util-wm')
+options=('!strip')
+source=("PrestamosBibliotecaCSF-Nativo-${pkgver}.tar.gz" 'prestamos-biblioteca-nativo.desktop' 'native.env.example')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+    install -d "$pkgdir/opt/$pkgname" "$pkgdir/usr/bin"
+    cp -a "$srcdir/PrestamosBibliotecaCSF-Nativo/." "$pkgdir/opt/$pkgname/"
+    ln -s "/opt/$pkgname/PrestamosBibliotecaCSF-Nativo" "$pkgdir/usr/bin/$pkgname"
+    install -Dm644 "$srcdir/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
+    install -Dm644 "$srcdir/native.env.example" "$pkgdir/usr/share/$pkgname/native.env.example"
+}

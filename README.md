@@ -215,3 +215,7 @@ Luego puedes usar Inno Setup con `installer.iss` para crear el instalador final.
 ## Estado del proyecto
 
 Este repositorio corresponde a una aplicación Django funcional orientada a uso interno de biblioteca escolar, con interfaz web, API REST y soporte para ejecución como aplicación de escritorio en Windows.
+
+## Edición de escritorio con PySide6
+
+El prototipo nativo usa el ORM de Django y PostgreSQL desde una ventana Qt. Consulta la [guía para Windows y Arch Linux](packaging/README.md).

@@ -36,3 +36,13 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Native desktop build outputs
+.venv-native/
+/build/native/
+/dist/PrestamosBibliotecaCSF-Nativo/
+/installer_output/prestamos-biblioteca-nativo-setup.exe
+/packaging/PrestamosBibliotecaCSF-Nativo-*.tar.gz
+/packaging/*.pkg.tar.*
+/packaging/pkg/
+/packaging/src/
