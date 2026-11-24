@@ -15,7 +15,7 @@ el registro de préstamos. El inicio habitual abre la interfaz completa.
 
 ## Probar en un solo PC con SQLite
 
-Con Python 3.12 y `requirements-native.txt` instalados, ejecuta desde la raíz
+Con Python 3.12 o 3.15 y `requirements-native.txt` instalados, ejecuta desde la raíz
 del repositorio:
 
 ```bash
@@ -51,7 +51,7 @@ Utiliza una cuenta de PostgreSQL autorizada para la base y las operaciones que v
 
 ## Crear el proyecto en Supabase
 
-Desde la raíz de esta rama, con Python 3.12 y las dependencias de
+Desde la raíz de esta rama, con Python 3.12 o 3.15 y las dependencias de
 `requirements-native.txt` instaladas, ejecuta:
 
 ```bash
@@ -95,21 +95,21 @@ de TLS y del esquema.
 
 ## Generar el instalador de Windows x64
 
-Compila en Windows x64 con **Python 3.12** e **Inno Setup 6**. Desde PowerShell:
+Compila en Windows x64 con **Python 3.15** e **Inno Setup 6**. Desde PowerShell:
 
 ```powershell
 git clone --branch codex/pyside6-desktop https://github.com/Leonard0nt/prestamos_local.git
 cd prestamos_local
-py -3.12 -m venv .venv-native
+py -3.15 -m venv .venv-native
 .\.venv-native\Scripts\python.exe -m pip install -r requirements-native.txt
 .\.venv-native\Scripts\python.exe -m PyInstaller --noconfirm packaging\native.spec
 ```
 
-El paquete incluye Qt WebEngine. Prueba `dist\PrestamosBibliotecaCSF-Nativo\PrestamosBibliotecaCSF-Nativo.exe`. Luego abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El resultado queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. El instalador coloca el ejecutable y sus bibliotecas y crea un acceso directo en el menú Inicio.
+Si descargaste el ZIP de la rama, extrae los archivos y ejecuta los comandos desde la carpeta que contiene `requirements-native.txt`. El paquete incluye Qt WebEngine. Prueba `dist\PrestamosBibliotecaCSF-Nativo\PrestamosBibliotecaCSF-Nativo.exe`. Luego abre `packaging\native-windows.iss` en Inno Setup y elige **Build → Compile**. El resultado queda en `installer_output\prestamos-biblioteca-nativo-setup.exe`. El instalador coloca el ejecutable y sus bibliotecas y crea un acceso directo en el menú Inicio.
 
 ## Generar el paquete de Arch Linux x86_64
 
-Compila en Arch x86_64. Desde Bash, instala las herramientas. El ejemplo usa `uv` para obtener la misma versión de Python que en Windows.
+Compila en Arch x86_64. Desde Bash, instala las herramientas. El ejemplo usa `uv` para instalar Python 3.12. Las dependencias seleccionan sus versiones según el intérprete.
 
 ```bash
 sudo pacman -S --needed base-devel git uv
