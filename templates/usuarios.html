@@ -391,7 +391,7 @@ function renderizarTablaUsuarios() {
                 <td title="${u.telefono}">${u.telefono}</td>
                 <td class="col-acciones">
                     <div class="acciones-contenedor">
-                    <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(u)})'>
+                    <button class="btn btn-warning btn-sm" onclick='abrirEditar(${u.id})'>
                         Editar
                     </button>
                     ${
@@ -702,7 +702,9 @@ async function reactivarUsuario(id) {
 }
 
 // ================= EDITAR =================
-function abrirEditar(u) {
+function abrirEditar(id) {
+    const u = usuariosData.find(item => item.id === id);
+    if (!u) return;
     const { nombres, apellidos } = separarNombreCompleto(u.nombre);
     document.getElementById("edit_id").value = u.id;
     document.getElementById("edit_nombres").value = nombres;

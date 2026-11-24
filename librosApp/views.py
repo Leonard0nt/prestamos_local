@@ -14,6 +14,21 @@ from .models import Ejemplar, Libro
 from .serializers import EjemplarSerializer, LibroSerializer
 
 
+def limitar_por_nivel(queryset, user, prefix=''):
+    if user.is_superuser:
+        return queryset
+    encargado = getattr(user, 'encargado', None)
+    if encargado is None:
+        return queryset.none()
+    return queryset.filter(
+        Q(**{prefix + 'nivel_asignado': encargado.nivel})
+        | Q(**{
+            prefix + 'nivel_asignado__isnull': True,
+            prefix + 'encargado_agrego__nivel': encargado.nivel,
+        })
+    )
+
+
 class LibroViewSet(ModelViewSet):
     queryset = Libro.objects.select_related('encargado_agrego')
     serializer_class = LibroSerializer
@@ -26,14 +41,7 @@ class LibroViewSet(ModelViewSet):
         if self.request.user.is_superuser:
             return queryset
 
-        encargado = getattr(self.request.user, 'encargado', None)
-        if encargado:
-            queryset = queryset.filter(
-                Q(nivel_asignado=encargado.nivel) |
-                Q(nivel_asignado__isnull=True, encargado_agrego__nivel=encargado.nivel)
-            )
-        else:
-            queryset = queryset.none()
+        queryset = limitar_por_nivel(queryset, self.request.user)
 
         encargado_id = self.request.query_params.get('encargado_id')
         if encargado_id:
@@ -56,13 +64,9 @@ class LibroViewSet(ModelViewSet):
     @staticmethod
     @login_required(login_url='login')  
     def ejemplares_view(request, libro_id):
-        libro = get_object_or_404(Libro, id=libro_id)
-        ejemplares = Ejemplar.objects.filter(libro=libro)
-
-        return render(request, 'ejemplares.html', {
-            'libro': libro,
-            'ejemplares': ejemplares,
-        })
+        libros = limitar_por_nivel(Libro.objects.all(), request.user)
+        libro = get_object_or_404(libros, id=libro_id)
+        return render(request, 'libros.html', {'libro_inicial': libro.pk})
     
     @action(detail=True, methods=['get'])
     def ejemplares_json(self, request, pk=None):
@@ -176,13 +180,7 @@ class EjemplarViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = Ejemplar.objects.select_related('libro', 'libro__encargado_agrego')
-        if self.request.user.is_superuser:
-            return queryset
-
-        encargado = getattr(self.request.user, 'encargado', None)
-        if encargado:
-            return queryset.filter(libro__encargado_agrego__nivel=encargado.nivel)
-        return queryset.none()
+        return limitar_por_nivel(queryset, self.request.user, prefix='libro__')
 
     def destroy(self, request, *args, **kwargs):
         ejemplar = self.get_object()

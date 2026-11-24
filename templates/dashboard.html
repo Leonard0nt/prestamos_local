@@ -490,12 +490,17 @@ async function cargarSelects() {
         // ================= DEVOLVER =================
         async function devolver(id) {
 
-            await fetch(`${API}/prestamos/${id}/devolver/`, {
+            const response = await fetch(`${API}/prestamos/${id}/devolver/`, {
                 method: "POST",
                 headers: {
                     "X-CSRFToken": csrfToken
                 }
             });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                alert(error.error || error.detail || "No se pudo devolver el préstamo.");
+                return;
+            }
             cargarPrestamos();
         }
 

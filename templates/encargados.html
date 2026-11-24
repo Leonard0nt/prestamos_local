@@ -338,7 +338,7 @@ function renderizarTablaEncargados() {
                 <td>${new Date(e.creado_en).toLocaleDateString()}</td>
                 <td>
                     <div class="acciones-encargado">
-                        <button class="btn btn-warning btn-sm" onclick='abrirEditar(${JSON.stringify(e)})'>
+                        <button class="btn btn-warning btn-sm" onclick='abrirEditar(${e.id})'>
                             Editar
                         </button>
                         <button class="btn btn-secondary btn-sm" onclick="reestablecerCuentaEncargado(${e.id})">
@@ -423,7 +423,9 @@ async function crearEncargado() {
     cargarEncargados();
 }
 
-function abrirEditar(e) {
+function abrirEditar(id) {
+    const e = encargadosData.find(item => item.id === id);
+    if (!e) return;
     const { nombres, apellidos } = separarNombreCompleto(e.nombre);
     document.getElementById("edit_id").value = e.id;
     document.getElementById("edit_nombres").value = nombres;

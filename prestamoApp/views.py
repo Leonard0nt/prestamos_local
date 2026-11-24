@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Q
 
 from librosApp.models import Ejemplar
@@ -51,28 +52,23 @@ class PrestamoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def devolver(self, request, pk=None):
-        prestamo_obj = self.get_object()
-        hoy = date.today()
-
-        # Evitar devolver dos veces
+        prestamo_obj = prestamo.objects.select_for_update().select_related('ejemplar').get(
+            pk=self.get_object().pk,
+        )
         if prestamo_obj.estado == 'D':
             return Response({"error": "Este libro ya fue devuelto"}, status=400)
 
-        # Calcular atraso
-        if hoy > prestamo_obj.fecha_devolucion:
-            dias = (hoy - prestamo_obj.fecha_devolucion).days
-            prestamo_obj.estado = 'A'
-            prestamo_obj.dias_atraso = dias
-        else:
-            prestamo_obj.estado = 'D'
-            prestamo_obj.dias_atraso = 0
+        # El atraso queda anotado en el historial aunque el ejemplar se haya devuelto.
+        prestamo_obj.estado = 'D'
+        prestamo_obj.dias_atraso = max((date.today() - prestamo_obj.fecha_devolucion).days, 0)
 
         ejemplar = prestamo_obj.ejemplar
         if ejemplar.estado not in {Ejemplar.ESTADO_BAJA, Ejemplar.ESTADO_EXTRAVIADO, Ejemplar.ESTADO_DANIADO}:
             ejemplar.estado = Ejemplar.ESTADO_DISPONIBLE
             ejemplar.save(update_fields=['estado'])
-        prestamo_obj.save()
+        prestamo_obj.save(update_fields=['estado', 'dias_atraso'])
 
         return Response(
             {

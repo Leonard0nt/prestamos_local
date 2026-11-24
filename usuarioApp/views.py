@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
@@ -78,6 +78,10 @@ def actualizar_credenciales_view(request):
     username = request.POST.get('username', '').strip()
     email = request.POST.get('email', '').strip()
     password = request.POST.get('password', '')
+    current_password = request.POST.get('current_password', '')
+
+    if not current_password or not user.check_password(current_password):
+        return JsonResponse({'detail': 'La contraseña actual es incorrecta.'}, status=400)
 
     if not username:
         return JsonResponse({'detail': 'El nombre de usuario es obligatorio.'}, status=400)
@@ -98,7 +102,7 @@ def actualizar_credenciales_view(request):
     user.save()
 
     if password:
-        login(request, user)
+        update_session_auth_hash(request, user)
 
     return JsonResponse({'detail': 'Configuración actualizada correctamente.'})
 

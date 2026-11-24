@@ -127,6 +127,20 @@ sudo pacman -U prestamos-biblioteca-nativo-0.1.0-1-x86_64.pkg.tar.zst
 
 Ejecuta `makepkg` con tu usuario habitual. La aplicación aparece en el menú como **Préstamos Biblioteca CSF Nativo**. El ejemplo de conexión también queda disponible en `/usr/share/prestamos-biblioteca-nativo/native.env.example`.
 
+## Ejecutar las pruebas
+
+Desde la raíz del proyecto, con las dependencias de `requirements-native.txt`
+instaladas, ejecuta la suite con una base SQLite temporal:
+
+```bash
+env DB_ENGINE=sqlite DB_SQLITE_PATH=:memory: python manage.py test
+```
+
+La suite pasa por el puente utilizado por la ventana de escritorio y verifica
+el inicio de sesión, las operaciones de catálogo, préstamos, alumnos y
+encargados, la configuración de cuenta y las restricciones de acceso. Para
+probar la ventana, arranca la app con una base inicializada para desarrollo.
+
 ## Probar el arranque
 
 Una vez configurada la base, abre el ejecutable o el acceso directo. Prueba primero con una base de desarrollo. El registro guarda un préstamo real en la base configurada. Para comparar el arranque, mide desde el doble clic hasta el diálogo de acceso en el mismo PC y con las dos ediciones cerradas.
