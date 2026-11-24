@@ -771,16 +771,13 @@ function abrirAgregarEjemplar() {
 async function confirmarAgregarEjemplares() {
 
     const input = document.getElementById("cantidadEjemplares");
-    let cantidad = input.value;
-
-    if (!cantidad || cantidad <= 0) {
-        alert("Ingresa una cantidad válida");
+    const cantidad = Number(input.value);
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+        alert("Ingresa una cantidad entera mayor a 0.");
         return;
     }
 
-    cantidad = parseInt(cantidad);
-
-    await fetch(`${API}/libros/${libroActual}/agregar_ejemplar/`, {
+    const response = await fetch(`${API}/libros/${libroActual}/agregar_ejemplar/`, {
         method: "POST",
         credentials: "same-origin",
         headers: {
@@ -789,6 +786,12 @@ async function confirmarAgregarEjemplares() {
         },
         body: JSON.stringify({ cantidad })
     });
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert(data.detail || "No se pudieron agregar los ejemplares.");
+        return;
+    }
 
     // cerrar modal correctamente
     const modal = bootstrap.Modal.getInstance(document.getElementById("modalCantidad"));

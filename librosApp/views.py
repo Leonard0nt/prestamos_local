@@ -1,8 +1,9 @@
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -71,36 +72,38 @@ class LibroViewSet(ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def agregar_ejemplar(self, request, pk=None): 
-        libro = self.get_object()
-
-        cantidad = int(request.data.get('cantidad', 1))
-        if cantidad <= 0:
+    @transaction.atomic
+    def agregar_ejemplar(self, request, pk=None):
+        try:
+            cantidad = serializers.IntegerField(min_value=1).run_validation(
+                request.data.get('cantidad', 1)
+            )
+        except serializers.ValidationError:
             return Response(
-                {'detail': 'La cantidad debe ser mayor que 0.'},
+                {'detail': 'La cantidad debe ser un entero mayor que 0.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # obtener último código existente
-        ultimo = Ejemplar.objects.filter(libro=libro).order_by('-id').first()
-
-        if ultimo:
-            ultimo_num = int(ultimo.codigo.split('-')[-1])
-        else:
-            ultimo_num = 0
-
-        nuevos = [
-            Ejemplar(
-                libro=libro,
-                codigo=f"{libro.codigo_libro}-{ultimo_num + i}",
+        libro = Libro.objects.select_for_update().get(pk=self.get_object().pk)
+        codigos = Ejemplar.objects.filter(libro=libro).values_list('codigo', flat=True)
+        # Los códigos anteriores pueden no terminar en un número.
+        sufijos = (codigo.rsplit('-', 1)[-1] for codigo in codigos)
+        ultimo_num = max(
+            (int(sufijo) for sufijo in sufijos if sufijo.isascii() and sufijo.isdecimal()),
+            default=0,
+        )
+        prefijo = f"{libro.codigo_libro}-"
+        if len(f"{prefijo}{ultimo_num + cantidad}") > Ejemplar._meta.get_field('codigo').max_length:
+            return Response(
+                {'detail': 'La numeración resultante supera el largo admitido para un código.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+
+        nuevos = Ejemplar.objects.bulk_create([
+            Ejemplar(libro=libro, codigo=f"{prefijo}{ultimo_num + i}")
             for i in range(1, cantidad + 1)
-        ]
-        Ejemplar.objects.bulk_create(nuevos)
-
-        serializer = EjemplarSerializer(nuevos, many=True)
-
-        return Response(serializer.data, status=201)
+        ])
+        return Response(EjemplarSerializer(nuevos, many=True).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def actualizar_estado_ejemplares(self, request, pk=None):
