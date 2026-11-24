@@ -115,8 +115,6 @@ Además, hay acciones personalizadas como:
 - Un entorno virtual de Python recomendado.
 - Variables de entorno configuradas en un archivo `.env` en la raíz del proyecto.
 
-> Nota: `requirements.txt` está incluido en el repositorio. Si tu editor o terminal muestra caracteres extraños al abrirlo, revisa su codificación antes de instalar dependencias.
-
 ## Configuración de entorno
 
 Crea un archivo `.env` en la raíz del proyecto con una configuración similar:
