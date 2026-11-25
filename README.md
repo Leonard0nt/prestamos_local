@@ -6,7 +6,43 @@ Sistema de gestión de biblioteca escolar para administrar usuarios, libros, eje
 
 La edición PySide6 funciona en Windows y Linux. Abre toda la interfaz en una ventana propia, sin servidor HTTP. En el primer arranque prepara SQLite local y te pide crear una cuenta de administrador.
 
-Consulta la [guía de instalación para Windows y Linux](packaging/README.md), que incluye la preparación automática de Supabase como opción para compartir una base entre equipos.
+Consulta la [instalación en Windows](packaging/README.md#windows-x64) o la [configuración opcional de Supabase](packaging/README.md#supabase-opcional).
+
+## Instalación en Linux
+
+Descarga la rama de escritorio y entra en la carpeta del proyecto.
+
+```bash
+git clone --branch codex/pyside6-desktop https://github.com/Leonard0nt/prestamos_local.git
+cd prestamos_local
+```
+
+### Ejecutar desde el código
+
+Con Python 3.12 o 3.15 instalado, usa el nombre del intérprete que tengas disponible, como `python3.12` o `python3.15`. Estos comandos usan Python 3.12.
+
+```bash
+python3.12 -m venv .venv-native
+.venv-native/bin/python -m pip install -r requirements-native.txt
+.venv-native/bin/python native_app.py
+```
+
+### Generar e instalar el paquete de Arch Linux
+
+En Arch x86_64, `uv` obtiene Python 3.12 aunque el sistema use otra versión. Ejecuta desde la raíz del proyecto.
+
+```bash
+sudo pacman -S --needed base-devel uv
+uv venv --python 3.12 .venv-native
+uv pip install --python .venv-native/bin/python -r requirements-native.txt
+.venv-native/bin/python -m PyInstaller --noconfirm packaging/native.spec
+tar -C dist -czf packaging/PrestamosBibliotecaCSF-Nativo-0.2.0.tar.gz PrestamosBibliotecaCSF-Nativo
+cd packaging
+makepkg --syncdeps
+sudo pacman -U prestamos-biblioteca-nativo-0.2.0-1-x86_64.pkg.tar.zst
+```
+
+Abre **Préstamos Biblioteca CSF Nativo** desde el menú de aplicaciones o ejecuta `prestamos-biblioteca-nativo`. La primera vez, crea tu administrador en la ventana de la app. SQLite se configura automáticamente.
 
 ## ¿Qué permite hacer?
 

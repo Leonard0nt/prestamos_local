@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import AdminUserCreationForm
+from django.contrib.auth.forms import UserCreationForm
 from django.core.management import call_command
 from django.db import DatabaseError, connections
 from django.db.migrations.executor import MigrationExecutor
@@ -52,11 +52,10 @@ class AdministratorDialog(QDialog):
         layout.addRow(buttons)
 
     def create_account(self):
-        form = AdminUserCreationForm({
+        form = UserCreationForm({
             "username": self.username.text().strip(),
             "password1": self.password.text(),
             "password2": self.confirmation.text(),
-            "usable_password": "true",
         })
         if not form.is_valid():
             self.errors.setText("\n".join(

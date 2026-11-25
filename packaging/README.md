@@ -27,28 +27,7 @@ Cuando PyInstaller indique `Build complete`, abre `packaging\native-windows.iss`
 
 ## Linux
 
-Desde la raíz del código, con Python 3.12 o 3.15:
-
-```bash
-python3 -m venv .venv-native
-.venv-native/bin/python -m pip install -r requirements-native.txt
-.venv-native/bin/python native_app.py
-```
-
-En Arch, puedes instalar Python 3.12 con `uv` si el Python del sistema usa otra versión. Para generar e instalar un paquete en Arch x86_64, ejecuta desde la raíz:
-
-```bash
-sudo pacman -S --needed base-devel uv
-uv venv --python 3.12 .venv-native
-uv pip install --python .venv-native/bin/python -r requirements-native.txt
-.venv-native/bin/python -m PyInstaller --noconfirm packaging/native.spec
-tar -C dist -czf packaging/PrestamosBibliotecaCSF-Nativo-0.2.0.tar.gz PrestamosBibliotecaCSF-Nativo
-cd packaging
-makepkg --syncdeps
-sudo pacman -U prestamos-biblioteca-nativo-0.2.0-1-x86_64.pkg.tar.zst
-```
-
-Luego abre **Préstamos Biblioteca CSF Nativo** desde el menú o ejecuta `prestamos-biblioteca-nativo`.
+Consulta la [instalación en Linux](../README.md#instalación-en-linux) en el README principal.
 
 ## Supabase opcional
 
